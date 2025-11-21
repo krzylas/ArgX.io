@@ -3,144 +3,198 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ArgX - Smart Allergen Detection</title>
+  <title>AeX - Smart Allergen Detection</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
-      --primary: #10b981;
-      --primary-dark: #059669;
-      --secondary: #3b82f6;
-      --dark: #0f172a;
-      --light: #f8fafc;
-      --gray: #64748b;
+      --primary: #4361EE;
+      --primary-light: #6B7FFF;
+      --primary-dark: #3451DE;
+      --success: #22C55E;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+      --bg: #E8EAED;
+      --bg-light: #F5F6F8;
+      --card: #FFFFFF;
+      --text: #1F2937;
+      --text-light: #6B7280;
+      --text-muted: #9CA3AF;
+      --border: #E5E7EB;
+      --shadow: 0 4px 20px rgba(0,0,0,0.08);
+      --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
     }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--dark); color: var(--light); line-height: 1.6; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
     .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
     
     /* Navigation */
-    nav { position: fixed; top: 0; left: 0; right: 0; background: rgba(15,23,42,0.95); backdrop-filter: blur(10px); z-index: 1000; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    nav { position: fixed; top: 0; left: 0; right: 0; background: rgba(232,234,237,0.95); backdrop-filter: blur(20px); z-index: 1000; border-bottom: 1px solid var(--border); }
     nav .container { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; }
-    .logo { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .nav-links { display: flex; gap: 30px; list-style: none; }
-    .nav-links a { color: var(--light); text-decoration: none; font-weight: 500; transition: color 0.3s; }
-    .nav-links a:hover { color: var(--primary); }
-    .nav-links a.active { color: var(--primary); }
+    .logo { font-size: 1.6rem; font-weight: 700; color: var(--text); }
+    .logo span { color: var(--danger); }
+    .nav-links { display: flex; gap: 8px; list-style: none; }
+    .nav-links a { color: var(--text-light); text-decoration: none; font-weight: 500; padding: 10px 18px; border-radius: 12px; transition: all 0.3s; }
+    .nav-links a:hover { background: var(--card); color: var(--text); }
+    .nav-links a.active { background: var(--card); color: var(--primary); box-shadow: var(--shadow); }
     
     /* Pages */
     .page { display: none; min-height: 100vh; padding-top: 80px; }
     .page.active { display: block; }
     
     /* Hero Section */
-    .hero { min-height: calc(100vh - 80px); display: flex; align-items: center; background: radial-gradient(ellipse at top, rgba(16,185,129,0.15), transparent 60%); }
+    .hero { min-height: calc(100vh - 80px); display: flex; align-items: center; padding: 40px 0; }
     .hero-content { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
-    .hero-text h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.1; margin-bottom: 20px; }
-    .hero-text h1 span { background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .hero-text p { font-size: 1.2rem; color: var(--gray); margin-bottom: 30px; }
-    .btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 30px; border-radius: 12px; font-weight: 600; text-decoration: none; transition: all 0.3s; cursor: pointer; border: none; font-size: 1rem; }
-    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(16,185,129,0.3); }
-    .btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
-    .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+    .hero-text h1 { font-size: 3.2rem; font-weight: 800; line-height: 1.15; margin-bottom: 20px; color: var(--text); }
+    .hero-text h1 span { color: var(--primary); }
+    .hero-text p { font-size: 1.15rem; color: var(--text-light); margin-bottom: 30px; }
+    .btn { display: inline-flex; align-items: center; gap: 10px; padding: 16px 32px; border-radius: 16px; font-weight: 600; text-decoration: none; transition: all 0.3s; cursor: pointer; border: none; font-size: 1rem; }
+    .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(67,97,238,0.3); }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(67,97,238,0.4); }
+    .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
     .hero-buttons { display: flex; gap: 15px; flex-wrap: wrap; }
-    .hero-visual { position: relative; }
-    .phone-mockup { width: 100%; max-width: 350px; margin: 0 auto; background: linear-gradient(145deg, #1e293b, #0f172a); border-radius: 40px; padding: 15px; box-shadow: 0 50px 100px rgba(0,0,0,0.5); }
-    .phone-screen { background: linear-gradient(180deg, #1a1a2e, #16213e); border-radius: 30px; padding: 30px; min-height: 500px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .scan-animation { width: 150px; height: 150px; border: 4px solid var(--primary); border-radius: 20px; position: relative; animation: pulse 2s infinite; }
-    .scan-line { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--primary); animation: scan 2s infinite; box-shadow: 0 0 20px var(--primary); }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    @keyframes scan { 0%, 100% { top: 0; } 50% { top: calc(100% - 3px); } }
-    .scan-text { margin-top: 30px; color: var(--primary); font-weight: 600; }
+    
+    /* Phone Mockup */
+    .hero-visual { display: flex; justify-content: center; }
+    .phone-mockup { width: 320px; background: var(--card); border-radius: 45px; padding: 12px; box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(0,0,0,0.05); }
+    .phone-screen { background: linear-gradient(180deg, var(--bg-light) 0%, var(--bg) 100%); border-radius: 36px; padding: 30px 25px; min-height: 520px; display: flex; flex-direction: column; align-items: center; }
+    .phone-notch { width: 120px; height: 28px; background: var(--text); border-radius: 20px; margin-bottom: 30px; }
+    .shield-container { position: relative; margin: 30px 0; }
+    .shield-outer { width: 180px; height: 180px; border-radius: 50%; background: linear-gradient(135deg, rgba(67,97,238,0.1), rgba(67,97,238,0.05)); display: flex; align-items: center; justify-content: center; }
+    .shield-inner { width: 140px; height: 140px; border-radius: 50%; background: linear-gradient(135deg, rgba(67,97,238,0.15), rgba(67,97,238,0.08)); display: flex; align-items: center; justify-content: center; }
+    .shield-icon { width: 70px; height: 80px; background: var(--primary); clip-path: path('M35 0 L70 15 L70 45 Q70 70 35 80 Q0 70 0 45 L0 15 Z'); display: flex; align-items: center; justify-content: center; position: relative; }
+    .shield-icon::after { content: '✓'; position: absolute; color: white; font-size: 28px; font-weight: bold; top: 50%; left: 50%; transform: translate(-50%, -40%); }
+    .phone-title { font-size: 1.6rem; font-weight: 700; margin-top: 25px; color: var(--text); }
+    .phone-subtitle { color: var(--text-light); text-align: center; margin-top: 8px; font-size: 0.95rem; }
+    .phone-btn { margin-top: 30px; background: var(--primary); color: white; padding: 18px 60px; border-radius: 16px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+    .phone-btn svg { width: 20px; height: 20px; }
     
     /* Features */
-    .features { padding: 100px 0; background: linear-gradient(180deg, transparent, rgba(16,185,129,0.05)); }
-    .section-title { text-align: center; margin-bottom: 60px; }
-    .section-title h2 { font-size: 2.5rem; margin-bottom: 15px; }
-    .section-title p { color: var(--gray); font-size: 1.1rem; }
-    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-    .feature-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 35px; transition: all 0.3s; }
-    .feature-card:hover { transform: translateY(-5px); border-color: var(--primary); background: rgba(16,185,129,0.05); }
-    .feature-icon { width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 20px; }
-    .feature-card h3 { font-size: 1.3rem; margin-bottom: 10px; }
-    .feature-card p { color: var(--gray); }
+    .features { padding: 80px 0; }
+    .section-title { text-align: center; margin-bottom: 50px; }
+    .section-title h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+    .section-title p { color: var(--text-light); font-size: 1.05rem; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+    .feature-card { background: var(--card); border-radius: 24px; padding: 30px; box-shadow: var(--shadow); transition: all 0.3s; border: 1px solid transparent; }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: rgba(67,97,238,0.2); }
+    .feature-icon { width: 56px; height: 56px; background: linear-gradient(135deg, rgba(67,97,238,0.15), rgba(67,97,238,0.05)); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 18px; }
+    .feature-card h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+    .feature-card p { color: var(--text-light); font-size: 0.95rem; }
+    
+    /* Stats Section */
+    .stats { padding: 60px 0; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 700px; margin: 0 auto; }
+    .stat-card { background: var(--card); border-radius: 20px; padding: 25px; text-align: center; box-shadow: var(--shadow); }
+    .stat-icon { font-size: 1.3rem; margin-bottom: 8px; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: var(--text); }
+    .stat-label { color: var(--text-muted); font-size: 0.9rem; }
     
     /* FAQ Page */
-    .faq-hero { padding: 60px 0; text-align: center; background: radial-gradient(ellipse at top, rgba(59,130,246,0.15), transparent 60%); }
-    .faq-container { max-width: 800px; margin: 0 auto; padding: 40px 20px 100px; }
-    .faq-category { margin-bottom: 40px; }
-    .faq-category h3 { color: var(--primary); font-size: 1.2rem; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-    .faq-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
-    .faq-question { padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; transition: background 0.3s; }
-    .faq-question:hover { background: rgba(255,255,255,0.05); }
-    .faq-question::after { content: '+'; font-size: 1.5rem; color: var(--primary); transition: transform 0.3s; }
+    .faq-hero { padding: 50px 0; text-align: center; }
+    .faq-hero h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 10px; }
+    .faq-hero p { color: var(--text-light); }
+    .faq-container { max-width: 800px; margin: 0 auto; padding: 20px 20px 80px; }
+    .faq-category { margin-bottom: 35px; }
+    .faq-category h3 { color: var(--primary); font-size: 1rem; font-weight: 600; margin-bottom: 15px; padding-left: 5px; }
+    .faq-item { background: var(--card); border-radius: 16px; margin-bottom: 10px; box-shadow: var(--shadow); overflow: hidden; }
+    .faq-question { padding: 20px 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; transition: background 0.3s; color: var(--text); }
+    .faq-question:hover { background: var(--bg-light); }
+    .faq-question::after { content: '+'; font-size: 1.4rem; color: var(--primary); transition: transform 0.3s; font-weight: 400; }
     .faq-item.open .faq-question::after { transform: rotate(45deg); }
     .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s, padding 0.3s; }
-    .faq-item.open .faq-answer { max-height: 500px; padding: 0 20px 20px; }
-    .faq-answer p { color: var(--gray); }
+    .faq-item.open .faq-answer { max-height: 500px; padding: 0 24px 20px; }
+    .faq-answer p { color: var(--text-light); line-height: 1.7; }
     
     /* Database Page */
-    .database-hero { padding: 40px 0; text-align: center; }
-    .db-controls { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 30px; justify-content: center; }
-    .db-controls input, .db-controls select { padding: 12px 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: white; font-size: 1rem; }
-    .db-controls input { flex: 1; min-width: 250px; max-width: 400px; }
-    .db-controls input::placeholder { color: var(--gray); }
+    .database-hero { padding: 30px 0; text-align: center; }
+    .database-hero h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+    .db-controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 25px; justify-content: center; }
+    .db-controls input, .db-controls select { padding: 14px 20px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1rem; box-shadow: var(--shadow); }
+    .db-controls input { flex: 1; min-width: 280px; max-width: 450px; }
+    .db-controls input:focus, .db-controls select:focus { outline: none; border-color: var(--primary); }
+    .db-controls input::placeholder { color: var(--text-muted); }
     
     /* Add Product Form */
-    .add-form { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 30px; margin-bottom: 40px; max-width: 900px; margin-left: auto; margin-right: auto; }
-    .add-form h3 { margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-    .form-group { display: flex; flex-direction: column; gap: 5px; }
-    .form-group label { font-size: 0.85rem; color: var(--gray); }
-    .form-group input, .form-group textarea { padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: white; }
+    .add-form { background: var(--card); border-radius: 24px; padding: 30px; margin-bottom: 30px; max-width: 900px; margin-left: auto; margin-right: auto; box-shadow: var(--shadow); }
+    .add-form h3 { margin-bottom: 20px; display: flex; align-items: center; gap: 10px; font-size: 1.2rem; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.85rem; color: var(--text-light); font-weight: 500; }
+    .form-group input, .form-group textarea { padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-light); color: var(--text); font-size: 1rem; }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); background: var(--card); }
     .form-group textarea { resize: vertical; min-height: 80px; }
     .form-group.full { grid-column: 1 / -1; }
-    .form-actions { margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; }
+    .form-actions { margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end; }
     
     /* Products Table */
-    .products-container { background: rgba(255,255,255,0.03); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
+    .products-container { background: var(--card); border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); }
     .products-table { width: 100%; border-collapse: collapse; }
-    .products-table th, .products-table td { padding: 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    .products-table th { background: rgba(255,255,255,0.05); font-weight: 600; color: var(--primary); position: sticky; top: 0; }
-    .products-table tr:hover { background: rgba(255,255,255,0.03); }
-    .products-table td { font-size: 0.95rem; }
-    .barcode { font-family: monospace; background: rgba(16,185,129,0.1); padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; }
-    .nutrition-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; margin: 2px; }
-    .nutrition-badge.kcal { background: rgba(239,68,68,0.2); color: #fca5a5; }
-    .nutrition-badge.protein { background: rgba(59,130,246,0.2); color: #93c5fd; }
-    .nutrition-badge.fat { background: rgba(245,158,11,0.2); color: #fcd34d; }
-    .nutrition-badge.carbs { background: rgba(16,185,129,0.2); color: #6ee7b7; }
-    .action-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.85rem; transition: all 0.3s; }
-    .action-btn.edit { background: rgba(59,130,246,0.2); color: #93c5fd; }
-    .action-btn.delete { background: rgba(239,68,68,0.2); color: #fca5a5; }
-    .action-btn:hover { transform: scale(1.05); }
+    .products-table th, .products-table td { padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--border); }
+    .products-table th { background: var(--bg-light); font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .products-table tr:hover { background: var(--bg-light); }
+    .products-table tr:last-child td { border-bottom: none; }
+    .barcode { font-family: 'SF Mono', Monaco, monospace; background: rgba(67,97,238,0.1); color: var(--primary); padding: 5px 10px; border-radius: 8px; font-size: 0.85rem; }
+    .nutrition-badge { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 500; margin: 2px; }
+    .nutrition-badge.kcal { background: rgba(239,68,68,0.1); color: var(--danger); }
+    .nutrition-badge.protein { background: rgba(67,97,238,0.1); color: var(--primary); }
+    .nutrition-badge.fat { background: rgba(245,158,11,0.1); color: var(--warning); }
+    .nutrition-badge.carbs { background: rgba(34,197,94,0.1); color: var(--success); }
+    .action-btn { padding: 8px 14px; border-radius: 10px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.3s; }
+    .action-btn.delete { background: rgba(239,68,68,0.1); color: var(--danger); }
+    .action-btn.delete:hover { background: rgba(239,68,68,0.2); }
     
-    /* Real-time indicator */
-    .realtime-status { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--gray); margin-bottom: 20px; justify-content: center; }
-    .status-dot { width: 10px; height: 10px; background: var(--primary); border-radius: 50%; animation: blink 2s infinite; }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .realtime-status { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-light); margin-bottom: 20px; justify-content: center; }
+    .status-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.9); } }
+    
+    /* Feedback Page */
+    .feedback-container { max-width: 600px; margin: 0 auto; padding: 40px 20px 80px; }
+    .feedback-card { background: var(--card); border-radius: 24px; padding: 40px; box-shadow: var(--shadow); }
+    .feedback-card h2 { font-size: 1.8rem; margin-bottom: 10px; text-align: center; }
+    .feedback-card > p { color: var(--text-light); text-align: center; margin-bottom: 30px; }
+    .feedback-form .form-group { margin-bottom: 20px; }
+    .feedback-form label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text); }
+    .feedback-form input, .feedback-form textarea, .feedback-form select { width: 100%; padding: 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--bg-light); font-size: 1rem; color: var(--text); }
+    .feedback-form input:focus, .feedback-form textarea:focus, .feedback-form select:focus { outline: none; border-color: var(--primary); background: var(--card); }
+    .feedback-form textarea { min-height: 150px; resize: vertical; }
+    .feedback-form .btn { width: 100%; justify-content: center; margin-top: 10px; }
+    .form-success { display: none; text-align: center; padding: 40px 20px; }
+    .form-success.show { display: block; }
+    .form-success svg { width: 80px; height: 80px; color: var(--success); margin-bottom: 20px; }
+    .form-success h3 { font-size: 1.5rem; margin-bottom: 10px; }
+    .form-success p { color: var(--text-light); }
+    .feedback-form-container.hidden { display: none; }
     
     /* Footer */
-    footer { background: rgba(0,0,0,0.3); padding: 40px 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.08); }
-    footer p { color: var(--gray); }
+    footer { background: var(--card); padding: 30px 0; text-align: center; border-top: 1px solid var(--border); margin-top: 40px; }
+    footer p { color: var(--text-muted); font-size: 0.9rem; }
     
     /* Responsive */
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
       .hero-content { grid-template-columns: 1fr; text-align: center; }
-      .hero-text h1 { font-size: 2.5rem; }
+      .hero-visual { order: -1; }
+      .phone-mockup { width: 280px; }
+      .hero-text h1 { font-size: 2.4rem; }
       .hero-buttons { justify-content: center; }
-      .nav-links { gap: 15px; font-size: 0.9rem; }
-      .products-table { font-size: 0.85rem; }
-      .products-table th, .products-table td { padding: 10px 8px; }
+      .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .stat-card { padding: 20px 15px; }
+      .stat-value { font-size: 1.5rem; }
+    }
+    @media (max-width: 600px) {
+      .nav-links { gap: 4px; }
+      .nav-links a { padding: 8px 12px; font-size: 0.9rem; }
+      .products-table th, .products-table td { padding: 12px 10px; font-size: 0.85rem; }
     }
   </style>
 </head>
 <body>
   <nav>
     <div class="container">
-      <div class="logo">ArgX</div>
+      <div class="logo">Ae<span>X</span></div>
       <ul class="nav-links">
         <li><a href="#" onclick="showPage('home')" class="active" id="nav-home">Home</a></li>
         <li><a href="#" onclick="showPage('faq')" id="nav-faq">FAQ</a></li>
-        <li><a href="#" onclick="showPage('database')" id="nav-database">Food Database</a></li>
+        <li><a href="#" onclick="showPage('database')" id="nav-database">Database</a></li>
+        <li><a href="#" onclick="showPage('feedback')" id="nav-feedback">Feedback</a></li>
       </ul>
     </div>
   </nav>
@@ -151,25 +205,57 @@
       <div class="container">
         <div class="hero-content">
           <div class="hero-text">
-            <h1>Scan. Detect. <span>Stay Safe.</span></h1>
-            <p>ArgX uses AI-powered barcode scanning to identify over 100 allergens instantly. Make informed food choices with confidence.</p>
+            <h1>Instantly scan foods for <span>hidden allergens</span></h1>
+            <p>AeX uses AI-powered barcode scanning to identify over 100 allergens in seconds. Make informed, safer food choices with confidence.</p>
             <div class="hero-buttons">
               <a href="#" class="btn btn-primary">
                 <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-                Download iOS
+                Download for iOS
               </a>
-              <a href="#" class="btn btn-secondary" onclick="showPage('database')">Explore Database</a>
+              <a href="#" class="btn btn-secondary" onclick="showPage('database')">View Database →</a>
             </div>
           </div>
           <div class="hero-visual">
             <div class="phone-mockup">
               <div class="phone-screen">
-                <div class="scan-animation">
-                  <div class="scan-line"></div>
+                <div class="phone-notch"></div>
+                <div class="shield-container">
+                  <div class="shield-outer">
+                    <div class="shield-inner">
+                      <div class="shield-icon"></div>
+                    </div>
+                  </div>
                 </div>
-                <p class="scan-text">Scanning for allergens...</p>
+                <div class="phone-title">Welcome to AeX</div>
+                <div class="phone-subtitle">Instantly scan foods for hidden allergens.</div>
+                <div class="phone-btn">
+                  Get Started
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div class="container">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value">100+</div>
+            <div class="stat-label">Allergens Detected</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value">Free</div>
+            <div class="stat-label">Basic Scanning</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🔒</div>
+            <div class="stat-value">Private</div>
+            <div class="stat-label">No Data Collected</div>
           </div>
         </div>
       </div>
@@ -179,16 +265,16 @@
       <div class="container">
         <div class="section-title">
           <h2>Powerful Features</h2>
-          <p>Everything you need for safe food choices</p>
+          <p>Everything you need for safer food choices</p>
         </div>
         <div class="features-grid">
           <div class="feature-card">
             <div class="feature-icon">📱</div>
             <h3>Instant Barcode Scanning</h3>
-            <p>Point your camera at any product barcode for immediate allergen analysis powered by AI.</p>
+            <p>Point your camera at any product barcode for immediate AI-powered allergen analysis.</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">🔬</div>
+            <div class="feature-icon">🛡️</div>
             <h3>100+ Allergens Detected</h3>
             <p>Comprehensive detection including peanuts, tree nuts, dairy, gluten, soy, and many more.</p>
           </div>
@@ -208,9 +294,9 @@
             <p>Community-driven database with instant updates and collaborative improvements.</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">🆓</div>
-            <h3>Free to Use</h3>
-            <p>Basic scanning features are completely free. No account required to get started.</p>
+            <div class="feature-icon">💡</div>
+            <h3>Smart Tips</h3>
+            <p>Learn about cross-contact risks and get personalized allergen safety advice.</p>
           </div>
         </div>
       </div>
@@ -221,18 +307,18 @@
   <div class="page" id="page-faq">
     <div class="faq-hero">
       <h1>Frequently Asked Questions</h1>
-      <p>Find answers to common questions about ArgX</p>
+      <p>Find answers to common questions about AeX</p>
     </div>
     <div class="faq-container">
       <div class="faq-category">
         <h3>📱 General</h3>
         <div class="faq-item">
           <div class="faq-question">What does this app do?</div>
-          <div class="faq-answer"><p>ArgX scans food products by barcode and uses AI to identify over 100 allergens in ingredient lists, helping you make safer food choices.</p></div>
+          <div class="faq-answer"><p>AeX scans food products by barcode and uses AI to identify over 100 allergens in ingredient lists, helping you make safer food choices.</p></div>
         </div>
         <div class="faq-item">
           <div class="faq-question">Which devices are supported?</div>
-          <div class="faq-answer"><p>ArgX works on iPhone and iPad (iOS 16+). Android support is coming soon.</p></div>
+          <div class="faq-answer"><p>AeX works on iPhone and iPad (iOS 16+). Android support is coming soon.</p></div>
         </div>
         <div class="faq-item">
           <div class="faq-question">Is an account required?</div>
@@ -248,7 +334,7 @@
         </div>
         <div class="faq-item">
           <div class="faq-question">What allergens can the app detect?</div>
-          <div class="faq-answer"><p>ArgX identifies over 100 common allergens including peanuts, tree nuts, dairy, gluten, soy, and more. You can customize your profile in Settings.</p></div>
+          <div class="faq-answer"><p>AeX identifies over 100 common allergens including peanuts, tree nuts, dairy, gluten, soy, and more. You can customize your profile in Settings.</p></div>
         </div>
         <div class="faq-item">
           <div class="faq-question">Can I add custom allergens?</div>
@@ -268,7 +354,7 @@
         </div>
         <div class="faq-item">
           <div class="faq-question">How accurate are allergen warnings?</div>
-          <div class="faq-answer"><p>ArgX aims for high accuracy, but results depend on product label quality and database completeness. Always double-check real packaging and consult your allergist for safety.</p></div>
+          <div class="faq-answer"><p>AeX aims for high accuracy, but results depend on product label quality and database completeness. Always double-check real packaging and consult your allergist for safety.</p></div>
         </div>
         <div class="faq-item">
           <div class="faq-question">Does the app work with international products?</div>
@@ -296,7 +382,7 @@
         <h3>💎 Account & Premium Features</h3>
         <div class="faq-item">
           <div class="faq-question">Is the app free?</div>
-          <div class="faq-answer"><p>Basic scanning is free. ArgX offers a premium subscription for advanced features like detailed nutritional analysis, personalized allergen profiles, and offline mode.</p></div>
+          <div class="faq-answer"><p>Basic scanning is free. AeX offers a premium subscription for advanced features like detailed nutritional analysis, personalized allergen profiles, and offline mode.</p></div>
         </div>
       </div>
     </div>
@@ -304,10 +390,10 @@
 
   <!-- Database Page -->
   <div class="page" id="page-database">
-    <div class="container" style="padding-top: 40px; padding-bottom: 100px;">
+    <div class="container" style="padding-top: 30px; padding-bottom: 80px;">
       <div class="database-hero">
         <h1>Food Database</h1>
-        <p style="color: var(--gray); margin-bottom: 20px;">Real-time collaborative food inventory system</p>
+        <p style="color: var(--text-light); margin-bottom: 15px;">Real-time collaborative food inventory system</p>
         <div class="realtime-status">
           <span class="status-dot"></span>
           <span>Real-time sync enabled • <span id="product-count">0</span> products</span>
@@ -380,14 +466,62 @@
     </div>
   </div>
 
+  <!-- Feedback Page -->
+  <div class="page" id="page-feedback">
+    <div class="feedback-container">
+      <div class="feedback-card">
+        <h2>Send Feedback</h2>
+        <p>Have an issue or suggestion? We'd love to hear from you.</p>
+        
+        <div class="form-success" id="form-success">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M8 12l2.5 2.5L16 9"/>
+          </svg>
+          <h3>Thank you!</h3>
+          <p>Your feedback has been sent successfully. We'll get back to you soon.</p>
+          <button class="btn btn-primary" onclick="resetFeedbackForm()" style="margin-top: 20px;">Send Another</button>
+        </div>
+        
+        <div class="feedback-form-container" id="feedback-form-container">
+          <!-- Replace YOUR_FORMSPREE_ID with your actual Formspree form ID -->
+          <form class="feedback-form" id="feedback-form" action="https://formspree.io/f/YOUR_FORMSPREE_ID" method="POST">
+            <div class="form-group">
+              <label for="feedback-email">Your Email *</label>
+              <input type="email" id="feedback-email" name="email" placeholder="you@example.com" required>
+            </div>
+            <div class="form-group">
+              <label for="feedback-type">Issue Type</label>
+              <select id="feedback-type" name="type">
+                <option value="bug">Bug Report</option>
+                <option value="feature">Feature Request</option>
+                <option value="data">Data Correction</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="feedback-message">Description *</label>
+              <textarea id="feedback-message" name="message" placeholder="Please describe the issue or suggestion in detail..." required></textarea>
+            </div>
+            <input type="hidden" name="_subject" value="AeX Feedback Submission">
+            <button type="submit" class="btn btn-primary">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              Send Feedback
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <footer>
     <div class="container">
-      <p>© 2024 ArgX. All rights reserved. Made with ❤️ for food safety.</p>
+      <p>© 2024 AeX. All rights reserved. Made with ❤️ for food safety.</p>
     </div>
   </footer>
 
   <script>
-    // Sample data mimicking OpenFoodFacts structure
+    // Sample data
     let products = [
       { id: 1, name: "Organic Rolled Oats", barcode: "5901234123457", ingredients: "Whole grain oats", kcal: 389, protein: 16.9, fat: 6.9, carbs: 66.3 },
       { id: 2, name: "Almond Milk Original", barcode: "0041570054123", ingredients: "Filtered water, almonds (2%), calcium carbonate, sea salt, locust bean gum, sunflower lecithin, gellan gum, vitamin A, vitamin D2, vitamin E", kcal: 13, protein: 0.4, fat: 1.1, carbs: 0.1 },
@@ -442,7 +576,6 @@
 
       products.push({ id: nextId++, name, barcode, ingredients, kcal, protein, fat, carbs });
       
-      // Clear form
       ['input-name', 'input-barcode', 'input-ingredients', 'input-kcal', 'input-protein', 'input-fat', 'input-carbs'].forEach(id => {
         document.getElementById(id).value = '';
       });
@@ -483,7 +616,7 @@
         <tr>
           <td><strong>${p.name}</strong></td>
           <td><span class="barcode">${p.barcode}</span></td>
-          <td style="max-width:200px;font-size:0.85rem;color:var(--gray)">${p.ingredients.substring(0, 80)}${p.ingredients.length > 80 ? '...' : ''}</td>
+          <td style="max-width:200px;font-size:0.9rem;color:var(--text-light)">${p.ingredients.substring(0, 60)}${p.ingredients.length > 60 ? '...' : ''}</td>
           <td>
             <span class="nutrition-badge kcal">${p.kcal} kcal</span>
             <span class="nutrition-badge protein">${p.protein}g P</span>
@@ -495,6 +628,43 @@
           </td>
         </tr>
       `).join('');
+    }
+
+    // Feedback form handling
+    const feedbackForm = document.getElementById('feedback-form');
+    feedbackForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(feedbackForm);
+      const btn = feedbackForm.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerHTML = 'Sending...';
+      
+      try {
+        const response = await fetch(feedbackForm.action, {
+          method: 'POST',
+          body: formData,
+          headers: { 'Accept': 'application/json' }
+        });
+        
+        if (response.ok) {
+          document.getElementById('feedback-form-container').classList.add('hidden');
+          document.getElementById('form-success').classList.add('show');
+          feedbackForm.reset();
+        } else {
+          throw new Error('Failed to send');
+        }
+      } catch (error) {
+        alert('There was a problem sending your feedback. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> Send Feedback';
+      }
+    });
+
+    function resetFeedbackForm() {
+      document.getElementById('feedback-form-container').classList.remove('hidden');
+      document.getElementById('form-success').classList.remove('show');
     }
 
     // Event listeners
