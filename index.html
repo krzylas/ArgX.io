@@ -484,8 +484,8 @@
         </div>
         
         <div class="feedback-form-container" id="feedback-form-container">
-          <!-- Replace YOUR_FORMSPREE_ID with your actual Formspree form ID -->
-          <form class="feedback-form" id="feedback-form" action="https://formspree.io/f/YOUR_FORMSPREE_ID" method="POST">
+          <!-- Formspree integration configured for krzysztoflasak@proton.me -->
+          <form class="feedback-form" id="feedback-form" action="https://formspree.io/f/myzvzgza" method="POST">
             <div class="form-group">
               <label for="feedback-email">Your Email *</label>
               <input type="email" id="feedback-email" name="email" placeholder="you@example.com" required>
@@ -516,11 +516,19 @@
 
   <footer>
     <div class="container">
-      <p>© 2024 AeX. All rights reserved. Made with ❤️ for food safety.</p>
+      <p> 2024 AeX. All rights reserved. Made with for food safety.</p>
     </div>
   </footer>
 
   <script>
+    // Supabase Configuration
+    const SUPABASE_URL = 'https://rkkzqqqfrlzxbhffrdzm.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJra3pxcXFmcmx6eGJoZmZyZHptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MzU0NDEsImV4cCI6MjA3OTMxMTQ0MX0.YWvpb4nhLswsdQjM4cG4BHESwMbwjDQj6rRgvUXH8zI';
+    
+    // To use Supabase, install the client library:
+    // <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    // Then initialize: const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
     // Sample data
     let products = [
       { id: 1, name: "Organic Rolled Oats", barcode: "5901234123457", ingredients: "Whole grain oats", kcal: 389, protein: 16.9, fat: 6.9, carbs: 66.3 },
