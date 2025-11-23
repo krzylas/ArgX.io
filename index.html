@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AeX - Smart Allergen Detection</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%234361EE'/%3E%3Ctext x='50' y='70' font-size='55' font-weight='800' font-family='Arial, sans-serif' text-anchor='middle' fill='%23ffffff'%3EAe%3C/text%3E%3Ctext x='73' y='70' font-size='55' font-weight='800' font-family='Arial, sans-serif' text-anchor='middle' fill='%237cfc28'%3EX%3C/text%3E%3C/svg%3E">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -187,12 +188,31 @@
       .nav-links a { padding: 8px 12px; font-size: 0.9rem; }
       .products-table th, .products-table td { padding: 12px 10px; font-size: 0.85rem; }
     }
+    
+    /* Chick Mascot Styles */
+    .chick-logo { width: 40px; height: 40px; border-radius: 50%; margin-right: 8px; vertical-align: middle; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .hero-chick { width: 120px; height: 120px; position: absolute; animation: float 3s ease-in-out infinite; }
+    .hero-chick.left { top: 20%; left: -60px; }
+    .hero-chick.right { top: 40%; right: -60px; }
+    .section-chick { width: 80px; height: 80px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .floating-chick { position: fixed; width: 60px; height: 60px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 999; animation: float 4s ease-in-out infinite; cursor: pointer; transition: transform 0.3s; }
+    .floating-chick:hover { transform: scale(1.2) rotate(10deg); }
+    .floating-chick-1 { bottom: 20px; right: 20px; animation-delay: 0s; }
+    .floating-chick-2 { top: 150px; right: 30px; animation-delay: 1s; }
+    .floating-chick-3 { bottom: 150px; left: 30px; animation-delay: 2s; }
+    .feature-chick { width: 100px; height: 100px; margin: 0 auto 20px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+    @media (max-width: 900px) {
+      .hero-chick, .floating-chick-2, .floating-chick-3 { display: none; }
+    }
   </style>
 </head>
 <body>
   <nav>
     <div class="container">
-      <div class="logo">Ae<span>X</span></div>
+      <div class="logo">
+        <img src="happy_chic_circular.png" alt="AeX Mascot" class="chick-logo">Ae<span>X</span>
+      </div>
       <ul class="nav-links">
         <li><a href="#" onclick="showPage('home')" class="active" id="nav-home">Home</a></li>
         <li><a href="#" onclick="showPage('faq')" id="nav-faq">FAQ</a></li>
@@ -203,11 +223,18 @@
     </div>
   </nav>
 
+  <!-- Floating Chicks -->
+  <img src="happy_chic_circular_yellow.png" alt="AeX Helper" class="floating-chick floating-chick-1" title="Click me!">
+  <img src="sad_chick.png" alt="AeX Helper" class="floating-chick floating-chick-2" title="Hello!">
+  <img src="annoyed_chick.png" alt="AeX Helper" class="floating-chick floating-chick-3" title="Hey!">
+
   <!-- Home Page -->
   <div class="page active" id="page-home">
     <section class="hero">
       <div class="container">
-        <div class="hero-content">
+        <div class="hero-content" style="position: relative;">
+          <img src="worried_chick.png" alt="Chick" class="hero-chick left">
+          <img src="angry_chick.png" alt="Chick" class="hero-chick right">
           <div class="hero-text">
             <h1>Instantly scan foods for <span>hidden allergens</span></h1>
             <p>AeX uses AI-powered barcode scanning to identify over 100 allergens in seconds. Make informed, safer food choices with confidence.</p>
@@ -272,6 +299,7 @@
     <section class="features">
       <div class="container">
         <div class="section-title">
+          <img src="happy_chic_circular.png" alt="Features" class="section-chick" style="margin: 0 auto 20px;">
           <h2>Powerful Features</h2>
           <p>Everything you need for safer food choices</p>
         </div>
@@ -314,6 +342,7 @@
   <!-- FAQ Page -->
   <div class="page" id="page-faq">
     <div class="faq-hero">
+      <img src="crashout_chick.png" alt="FAQ" class="section-chick" style="margin: 0 auto 20px;">
       <h1>Frequently Asked Questions</h1>
       <p>Find answers to common questions about AeX</p>
     </div>
@@ -400,6 +429,7 @@
   <div class="page" id="page-database">
     <div class="container" style="padding-top: 30px; padding-bottom: 80px;">
       <div class="database-hero">
+        <img src="dissapoionted_chick.png" alt="Database" class="section-chick" style="margin: 0 auto 15px;">
         <h1>Food Database</h1>
         <p style="color: var(--text-light); margin-bottom: 15px;">Real-time collaborative food inventory system</p>
         <div class="realtime-status">
@@ -512,6 +542,7 @@
     <div class="feedback-container">
       <div class="feedback-card">
         <div class="feedback-form-container" id="feedback-form-container">
+          <img src="dissapoionted_chick_blue.png" alt="Feedback" class="section-chick" style="margin: 0 auto 20px; display: block;">
           <h2>Share Your Feedback</h2>
           <p>Help us improve AeX! Your input matters.</p>
           <form class="feedback-form" id="feedback-form">
