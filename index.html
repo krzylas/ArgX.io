@@ -1,182 +1,952 @@
--- =====================================================
--- FIX STORAGE PERMISSIONS - SUPABASE
--- This fixes the "Permission denied" error for uploads
--- =====================================================
-
--- =====================================================
--- STEP 1: DELETE OLD CONFLICTING POLICIES
--- =====================================================
-
--- Remove any existing policies that might conflict
-DROP POLICY IF EXISTS "Allow public uploads" ON storage.objects;
-DROP POLICY IF EXISTS "Allow public access to images" ON storage.objects;
-DROP POLICY IF EXISTS "Allow public delete" ON storage.objects;
-DROP POLICY IF EXISTS "Public Access" ON storage.objects;
-DROP POLICY IF EXISTS "Public Upload" ON storage.objects;
-
--- =====================================================
--- STEP 2: CREATE NEW PERMISSIVE POLICIES
--- =====================================================
-
--- Policy 1: Allow ANYONE (including anonymous) to INSERT/UPLOAD
-CREATE POLICY "Enable insert for all users"
-ON storage.objects
-FOR INSERT
-TO public
-WITH CHECK (bucket_id = 'product-images');
-
--- Policy 2: Allow ANYONE to SELECT/VIEW images
-CREATE POLICY "Enable select for all users"
-ON storage.objects
-FOR SELECT
-TO public
-USING (bucket_id = 'product-images');
-
--- Policy 3: Allow ANYONE to UPDATE images
-CREATE POLICY "Enable update for all users"
-ON storage.objects
-FOR UPDATE
-TO public
-USING (bucket_id = 'product-images')
-WITH CHECK (bucket_id = 'product-images');
-
--- Policy 4: Allow ANYONE to DELETE images
-CREATE POLICY "Enable delete for all users"
-ON storage.objects
-FOR DELETE
-TO public
-USING (bucket_id = 'product-images');
-
--- =====================================================
--- STEP 3: VERIFY BUCKET EXISTS AND IS PUBLIC
--- =====================================================
-
--- Check if bucket exists
-DO $$
-BEGIN
-    -- Try to update bucket to be public
-    UPDATE storage.buckets
-    SET public = true
-    WHERE id = 'product-images';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AeX - Smart Allergen Detection</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #4361EE;
+      --primary-light: #6B7FFF;
+      --primary-dark: #3451DE;
+      --success: #22C55E;
+      --warning: #F59E0B;
+      --danger: #7cfc28;
+      --bg: #E8EAED;
+      --bg-light: #F5F6F8;
+      --card: #FFFFFF;
+      --text: #1F2937;
+      --text-light: #6B7280;
+      --text-muted: #9CA3AF;
+      --border: #E5E7EB;
+      --shadow: 0 4px 20px rgba(0,0,0,0.08);
+      --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
     
-    -- If no rows were updated, bucket doesn't exist
-    IF NOT FOUND THEN
-        -- Create the bucket
-        INSERT INTO storage.buckets (id, name, public)
-        VALUES ('product-images', 'product-images', true);
+    /* Navigation */
+    nav { position: fixed; top: 0; left: 0; right: 0; background: rgba(232,234,237,0.95); backdrop-filter: blur(20px); z-index: 1000; border-bottom: 1px solid var(--border); }
+    nav .container { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; }
+    .logo { font-size: 1.6rem; font-weight: 700; color: var(--text); }
+    .logo span { color: var(--danger); }
+    .nav-links { display: flex; gap: 8px; list-style: none; }
+    .nav-links a { color: var(--text-light); text-decoration: none; font-weight: 500; padding: 10px 18px; border-radius: 12px; transition: all 0.3s; }
+    .nav-links a:hover { background: var(--card); color: var(--text); }
+    .nav-links a.active { background: var(--card); color: var(--primary); box-shadow: var(--shadow); }
+    
+    /* Pages */
+    .page { display: none; min-height: 100vh; padding-top: 80px; }
+    .page.active { display: block; }
+    
+    /* Hero Section */
+    .hero { min-height: calc(100vh - 80px); display: flex; align-items: center; padding: 40px 0; }
+    .hero-content { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+    .hero-text h1 { font-size: 3.2rem; font-weight: 800; line-height: 1.15; margin-bottom: 20px; color: var(--text); }
+    .hero-text h1 span { color: var(--primary); }
+    .hero-text p { font-size: 1.15rem; color: var(--text-light); margin-bottom: 30px; }
+    .btn { display: inline-flex; align-items: center; gap: 10px; padding: 16px 32px; border-radius: 16px; font-weight: 600; text-decoration: none; transition: all 0.3s; cursor: pointer; border: none; font-size: 1rem; }
+    .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(67,97,238,0.3); }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(67,97,238,0.4); }
+    .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+    .hero-buttons { display: flex; gap: 15px; flex-wrap: wrap; }
+    
+    /* Phone Mockup */
+    .hero-visual { display: flex; justify-content: center; }
+    .phone-mockup { width: 320px; background: var(--card); border-radius: 45px; padding: 12px; box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(0,0,0,0.05); position: relative; }
+    .phone-screen { background: #000; border-radius: 36px; padding: 0; height: 690px; display: flex; flex-direction: column; align-items: center; overflow: hidden; position: relative; }
+    .phone-notch { width: 120px; height: 28px; background: var(--text); border-radius: 20px; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 10; }
+    
+    /* Carousel Styles */
+    .carousel-container { width: 100%; height: 100%; position: relative; }
+    .carousel-slide { width: 100%; height: 100%; display: none; align-items: center; justify-content: center; padding: 0; }
+    .carousel-slide.active { display: flex; }
+    .carousel-slide img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+    .carousel-dots { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 10; }
+    .carousel-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.3s; }
+    .carousel-dot.active { background: rgba(255,255,255,0.9); width: 24px; border-radius: 4px; }
+    .carousel-arrow { display: none; }
+    
+    /* Features */
+    .features { padding: 80px 0; }
+    .section-title { text-align: center; margin-bottom: 50px; }
+    .section-title h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+    .section-title p { color: var(--text-light); font-size: 1.05rem; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+    .feature-card { background: var(--card); border-radius: 24px; padding: 30px; box-shadow: var(--shadow); transition: all 0.3s; border: 1px solid transparent; }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: rgba(67,97,238,0.2); }
+    .feature-icon { width: 56px; height: 56px; background: linear-gradient(135deg, rgba(67,97,238,0.15), rgba(67,97,238,0.05)); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 18px; }
+    .feature-card h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+    .feature-card p { color: var(--text-light); font-size: 0.95rem; }
+    
+    /* Stats Section */
+    .stats { padding: 60px 0; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 700px; margin: 0 auto; }
+    .stat-card { background: var(--card); border-radius: 20px; padding: 25px; text-align: center; box-shadow: var(--shadow); }
+    .stat-icon { font-size: 1.3rem; margin-bottom: 8px; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: var(--text); }
+    .stat-label { color: var(--text-muted); font-size: 0.9rem; }
+    
+    /* FAQ Page */
+    .faq-hero { padding: 50px 0; text-align: center; }
+    .faq-hero h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 10px; }
+    .faq-hero p { color: var(--text-light); }
+    .faq-container { max-width: 800px; margin: 0 auto; padding: 20px 20px 80px; }
+    .faq-category { margin-bottom: 35px; }
+    .faq-category h3 { color: var(--primary); font-size: 1rem; font-weight: 600; margin-bottom: 15px; padding-left: 5px; }
+    .faq-item { background: var(--card); border-radius: 16px; margin-bottom: 10px; box-shadow: var(--shadow); overflow: hidden; }
+    .faq-question { padding: 20px 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; transition: background 0.3s; color: var(--text); }
+    .faq-question:hover { background: var(--bg-light); }
+    .faq-question::after { content: '+'; font-size: 1.4rem; color: var(--primary); transition: transform 0.3s; font-weight: 400; }
+    .faq-item.open .faq-question::after { transform: rotate(45deg); }
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s, padding 0.3s; }
+    .faq-item.open .faq-answer { max-height: 500px; padding: 0 24px 20px; }
+    .faq-answer p { color: var(--text-light); line-height: 1.7; }
+    
+    /* Database Page */
+    .database-hero { padding: 30px 0; text-align: center; }
+    .database-hero h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+    .db-controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 25px; justify-content: center; }
+    .db-controls input, .db-controls select { padding: 14px 20px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1rem; box-shadow: var(--shadow); }
+    .db-controls input { flex: 1; min-width: 280px; max-width: 450px; }
+    .db-controls input:focus, .db-controls select:focus { outline: none; border-color: var(--primary); }
+    .db-controls input::placeholder { color: var(--text-muted); }
+    
+    /* Add Product Form */
+    .add-form { background: var(--card); border-radius: 24px; padding: 30px; margin-bottom: 30px; max-width: 900px; margin-left: auto; margin-right: auto; box-shadow: var(--shadow); }
+    .add-form h3 { margin-bottom: 20px; display: flex; align-items: center; gap: 10px; font-size: 1.2rem; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.85rem; color: var(--text-light); font-weight: 500; }
+    .form-group input, .form-group textarea { padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-light); color: var(--text); font-size: 1rem; }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); background: var(--card); }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-actions { margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end; }
+    
+    /* Products Table */
+    .products-container { background: var(--card); border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); }
+    .products-table { width: 100%; border-collapse: collapse; }
+    .products-table th, .products-table td { padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--border); }
+    .products-table th { background: var(--bg-light); font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .products-table tr:hover { background: var(--bg-light); }
+    .products-table tr:last-child td { border-bottom: none; }
+    .barcode { font-family: 'SF Mono', Monaco, monospace; background: rgba(67,97,238,0.1); color: var(--primary); padding: 5px 10px; border-radius: 8px; font-size: 0.85rem; }
+    .nutrition-badge { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 500; margin: 2px; }
+    .nutrition-badge.kcal { background: rgba(239,68,68,0.1); color: var(--danger); }
+    .nutrition-badge.protein { background: rgba(67,97,238,0.1); color: var(--primary); }
+    .nutrition-badge.fat { background: rgba(245,158,11,0.1); color: var(--warning); }
+    .nutrition-badge.carbs { background: rgba(34,197,94,0.1); color: var(--success); }
+    .action-btn { padding: 8px 14px; border-radius: 10px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.3s; }
+    .action-btn.delete { background: rgba(239,68,68,0.1); color: var(--danger); }
+    .action-btn.delete:hover { background: rgba(239,68,68,0.2); }
+    
+    .realtime-status { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-light); margin-bottom: 20px; justify-content: center; }
+    .status-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; animation: pulse 2s infinite; }
+    .status-dot.connecting { background: var(--warning); }
+    .status-dot.disconnected { background: var(--danger); animation: none; }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.9); } }
+    
+    /* Feedback Page */
+    .feedback-container { max-width: 600px; margin: 0 auto; padding: 40px 20px 80px; }
+    .feedback-card { background: var(--card); border-radius: 24px; padding: 40px; box-shadow: var(--shadow); }
+    .feedback-card h2 { font-size: 1.8rem; margin-bottom: 10px; text-align: center; }
+    .feedback-card > p { color: var(--text-light); text-align: center; margin-bottom: 30px; }
+    .feedback-form .form-group { margin-bottom: 20px; }
+    .feedback-form label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text); }
+    .feedback-form input, .feedback-form textarea, .feedback-form select { width: 100%; padding: 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--bg-light); font-size: 1rem; color: var(--text); }
+    .feedback-form input:focus, .feedback-form textarea:focus, .feedback-form select:focus { outline: none; border-color: var(--primary); background: var(--card); }
+    .feedback-form textarea { min-height: 150px; resize: vertical; }
+    .feedback-form .btn { width: 100%; justify-content: center; margin-top: 10px; }
+    .form-success { display: none; text-align: center; padding: 40px 20px; }
+    .form-success.show { display: block; }
+    .form-success svg { width: 80px; height: 80px; color: var(--success); margin-bottom: 20px; }
+    .form-success h3 { font-size: 1.5rem; margin-bottom: 10px; }
+    .form-success p { color: var(--text-light); }
+    .feedback-form-container.hidden { display: none; }
+    
+    /* Footer */
+    footer { background: var(--card); padding: 30px 0; text-align: center; border-top: 1px solid var(--border); margin-top: 40px; }
+    footer p { color: var(--text-muted); font-size: 0.9rem; }
+    
+    /* Responsive */
+    @media (max-width: 900px) {
+      .hero-content { grid-template-columns: 1fr; text-align: center; }
+      .hero-visual { display: none; }
+      .hero-text h1 { font-size: 2.4rem; }
+      .hero-buttons { justify-content: center; }
+      .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .stat-card { padding: 20px 15px; }
+      .stat-value { font-size: 1.5rem; }
+    }
+    @media (max-width: 600px) {
+      .nav-links { gap: 4px; }
+      .nav-links a { padding: 8px 12px; font-size: 0.9rem; }
+      .products-table th, .products-table td { padding: 12px 10px; font-size: 0.85rem; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <div class="logo">Ae<span>X</span></div>
+      <ul class="nav-links">
+        <li><a href="#" onclick="showPage('home')" class="active" id="nav-home">Home</a></li>
+        <li><a href="#" onclick="showPage('faq')" id="nav-faq">FAQ</a></li>
+        <li><a href="#" onclick="showPage('database')" id="nav-database">Database</a></li>
+        <li><a href="#" onclick="showPage('leaderboard')" id="nav-leaderboard">Leaderboard</a></li>
+        <li><a href="#" onclick="showPage('feedback')" id="nav-feedback">Feedback</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Home Page -->
+  <div class="page active" id="page-home">
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <div class="hero-text">
+            <h1>Instantly scan foods for <span>hidden allergens</span></h1>
+            <p>AeX uses AI-powered barcode scanning to identify over 100 allergens in seconds. Make informed, safer food choices with confidence.</p>
+            <div class="hero-buttons">
+              <a href="#" class="btn btn-primary">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                Download for iOS
+              </a>
+              <a href="#" class="btn btn-secondary" onclick="showPage('database')">View Database →</a>
+            </div>
+          </div>
+          <div class="hero-visual">
+            <div class="phone-mockup">
+              <div class="phone-screen">
+                <div class="phone-notch"></div>
+                <div class="carousel-container">
+                  <div class="carousel-slide active">
+                    <img src="screenshot1.jpg" alt="AeX App Screenshot 1" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\'color:white;text-align:center;padding:20px;\'><div style=\'font-size:3rem;margin-bottom:10px;\'>📱</div><div style=\'font-size:1.2rem;font-weight:600;\'>Product Scanner</div><div style=\'font-size:0.9rem;opacity:0.7;margin-top:10px;\'>Screenshot 1</div></div>';">
+                  </div>
+                  <div class="carousel-slide">
+                    <img src="screenshot2.jpg" alt="AeX App Screenshot 2" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\'color:white;text-align:center;padding:20px;\'><div style=\'font-size:3rem;margin-bottom:10px;\'>🏠</div><div style=\'font-size:1.2rem;font-weight:600;\'>Dashboard</div><div style=\'font-size:0.9rem;opacity:0.7;margin-top:10px;\'>Screenshot 2</div></div>';">
+                  </div>
+                  <div class="carousel-slide">
+                    <img src="screenshot3.jpg" alt="AeX App Screenshot 3" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\'color:white;text-align:center;padding:20px;\'><div style=\'font-size:3rem;margin-bottom:10px;\'>🍫</div><div style=\'font-size:1.2rem;font-weight:600;\'>Product Details</div><div style=\'font-size:0.9rem;opacity:0.7;margin-top:10px;\'>Screenshot 3</div></div>';">
+                  </div>
+                  
+                  <div class="carousel-dots">
+                    <span class="carousel-dot active" onclick="setSlide(0)"></span>
+                    <span class="carousel-dot" onclick="setSlide(1)"></span>
+                    <span class="carousel-dot" onclick="setSlide(2)"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div class="container">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value">100+</div>
+            <div class="stat-label">Allergens Detected</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value">Free</div>
+            <div class="stat-label">Basic Scanning</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🔒</div>
+            <div class="stat-value">Private</div>
+            <div class="stat-label">No Data Collected</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="container">
+        <div class="section-title">
+          <h2>Powerful Features</h2>
+          <p>Everything you need for safer food choices</p>
+        </div>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">📱</div>
+            <h3>Instant Barcode Scanning</h3>
+            <p>Point your camera at any product barcode for immediate AI-powered allergen analysis.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🛡️</div>
+            <h3>100+ Allergens Detected</h3>
+            <p>Comprehensive detection including peanuts, tree nuts, dairy, gluten, soy, and many more.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🌍</div>
+            <h3>Global Product Database</h3>
+            <p>Powered by Open Food Facts with AI-enhanced accuracy for international products.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <h3>Privacy First</h3>
+            <p>No personal data collected. Only anonymous scan data to improve the database.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Real-Time Sync</h3>
+            <p>Community-driven database with instant updates and collaborative improvements.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">💡</div>
+            <h3>Smart Tips</h3>
+            <p>Learn about cross-contact risks and get personalized allergen safety advice.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- FAQ Page -->
+  <div class="page" id="page-faq">
+    <div class="faq-hero">
+      <h1>Frequently Asked Questions</h1>
+      <p>Find answers to common questions about AeX</p>
+    </div>
+    <div class="faq-container">
+      <div class="faq-category">
+        <h3>📱 General</h3>
+        <div class="faq-item">
+          <div class="faq-question">What does this app do?</div>
+          <div class="faq-answer"><p>AeX scans food products by barcode and uses AI to identify over 100 allergens in ingredient lists, helping you make safer food choices.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">Which devices are supported?</div>
+          <div class="faq-answer"><p>AeX works on iPhone and iPad (iOS 16+). Android support is coming soon.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">Is an account required?</div>
+          <div class="faq-answer"><p>No account is required to use basic scanning features.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-category">
+        <h3>🔍 Scanning & Allergens</h3>
+        <div class="faq-item">
+          <div class="faq-question">How do I scan a product?</div>
+          <div class="faq-answer"><p>Tap the scan button on the home screen and point your camera at the product barcode.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">What allergens can the app detect?</div>
+          <div class="faq-answer"><p>AeX identifies over 100 common allergens including peanuts, tree nuts, dairy, gluten, soy, and many more. You can customize your profile in Settings.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">Can I add custom allergens?</div>
+          <div class="faq-answer"><p>Currently, you can select from our in-app list. Custom allergen entries are planned for future updates.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">What if a barcode isn't found?</div>
+          <div class="faq-answer"><p>If a product isn't in our database, you'll see an option to submit details and help improve our data.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-category">
+        <h3>📊 Ingredient & Data Accuracy</h3>
+        <div class="faq-item">
+          <div class="faq-question">Where does product information come from?</div>
+          <div class="faq-answer"><p>We primarily use Open Food Facts, an open, community-driven database. AI is used to interpret and cross-check ingredient lists for the most reliable results.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">How accurate are allergen warnings?</div>
+          <div class="faq-answer"><p>AeX aims for high accuracy, but results depend on product label quality and database completeness. Always double-check real packaging and consult your allergist for safety.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">Does the app work with international products?</div>
+          <div class="faq-answer"><p>Yes—ingredients in many languages are supported. If you encounter an unsupported product, you can submit it for review.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-category">
+        <h3>🔐 Privacy & Data</h3>
+        <div class="faq-item">
+          <div class="faq-question">What data does the app store?</div>
+          <div class="faq-answer"><p>Only anonymous scan data (barcode and ingredient information) is saved to improve the database. No personal information is collected.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">Is my data shared?</div>
+          <div class="faq-answer"><p>No personal data is ever shared. Contributed product info may be sent to Open Food Facts to help the broader community.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question">Where can I read your privacy policy?</div>
+          <div class="faq-answer"><p>See our Privacy Policy in the app menu or on our website.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-category">
+        <h3>💎 Account & Premium Features</h3>
+        <div class="faq-item">
+          <div class="faq-question">Is the app free?</div>
+          <div class="faq-answer"><p>Basic scanning is free. AeX offers a premium subscription for advanced features like detailed nutritional analysis, personalized allergen profiles, and offline mode.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Database Page -->
+  <div class="page" id="page-database">
+    <div class="container" style="padding-top: 30px; padding-bottom: 80px;">
+      <div class="database-hero">
+        <h1>Food Database</h1>
+        <p style="color: var(--text-light); margin-bottom: 15px;">Real-time collaborative food inventory system</p>
+        <div class="realtime-status">
+          <span class="status-dot" id="sync-status-dot"></span>
+          <span id="sync-status-text">Connecting to database...</span> • <span id="product-count">0</span> products
+        </div>
+      </div>
+
+      <div class="db-controls">
+        <input type="text" id="search-input" placeholder="Search by name, barcode, or ingredient...">
+        <select id="sort-select">
+          <option value="name">Sort by Name</option>
+          <option value="kcal">Sort by Calories</option>
+          <option value="protein">Sort by Protein</option>
+          <option value="barcode">Sort by Barcode</option>
+        </select>
+        <button class="btn btn-primary" onclick="toggleAddForm()">+ Add Product</button>
+      </div>
+
+      <div class="add-form" id="add-form" style="display: none;">
+        <h3>➕ Add New Product</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Product Name *</label>
+            <input type="text" id="input-name" placeholder="e.g., Organic Oats">
+          </div>
+          <div class="form-group">
+            <label>Barcode *</label>
+            <input type="text" id="input-barcode" placeholder="e.g., 5901234123457">
+          </div>
+          <div class="form-group">
+            <label>Calories (kcal/100g)</label>
+            <input type="number" id="input-kcal" placeholder="e.g., 389">
+          </div>
+          <div class="form-group">
+            <label>Protein (g/100g)</label>
+            <input type="number" step="0.1" id="input-protein" placeholder="e.g., 16.9">
+          </div>
+          <div class="form-group">
+            <label>Fat (g/100g)</label>
+            <input type="number" step="0.1" id="input-fat" placeholder="e.g., 6.9">
+          </div>
+          <div class="form-group">
+            <label>Carbs (g/100g)</label>
+            <input type="number" step="0.1" id="input-carbs" placeholder="e.g., 66.3">
+          </div>
+          <div class="form-group full">
+            <label>Ingredients</label>
+            <textarea id="input-ingredients" placeholder="e.g., Whole grain oats, salt, vitamins (B1, B6, folic acid)"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-secondary" onclick="toggleAddForm()">Cancel</button>
+          <button class="btn btn-primary" onclick="addProduct()">Add Product</button>
+        </div>
+      </div>
+
+      <div class="products-container">
+        <table class="products-table">
+          <thead>
+            <tr>
+              <th>Product Name</th>
+              <th>Barcode</th>
+              <th>Ingredients</th>
+              <th>Nutrition (per 100g)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="products-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaderboard Page -->
+  <div class="page" id="page-leaderboard">
+    <div class="container" style="padding-top: 30px; padding-bottom: 80px;">
+      <div class="database-hero">
+        <h1>🏆 Leaderboard</h1>
+        <p style="color: var(--text-light); margin-bottom: 20px;">Top scanners in our community</p>
+        <div class="realtime-status">
+          <span class="status-dot" id="leaderboard-status-dot"></span>
+          <span id="leaderboard-status-text">Loading leaderboard...</span> • <span id="leaderboard-count">0</span> users
+        </div>
+      </div>
+
+      <div class="products-container" style="max-width: 800px; margin: 0 auto;">
+        <table class="products-table">
+          <thead>
+            <tr>
+              <th style="width: 80px; text-align: center;">Rank</th>
+              <th>User ID</th>
+              <th style="text-align: center;">Number of Scans</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-tbody">
+            <tr>
+              <td colspan="3" style="text-align: center; padding: 40px; color: var(--text-light);">
+                Loading leaderboard data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feedback Page -->
+  <div class="page" id="page-feedback">
+    <div class="feedback-container">
+      <div class="feedback-card">
+        <div class="feedback-form-container" id="feedback-form-container">
+          <h2>Share Your Feedback</h2>
+          <p>Help us improve AeX! Your input matters.</p>
+          <form class="feedback-form" id="feedback-form">
+            <div class="form-group">
+              <label for="feedback-name">Name (Optional)</label>
+              <input type="text" id="feedback-name" placeholder="Your name">
+            </div>
+            <div class="form-group">
+              <label for="feedback-email">Email (Optional)</label>
+              <input type="email" id="feedback-email" placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+              <label for="feedback-type">Feedback Type</label>
+              <select id="feedback-type" required>
+                <option value="">Select type...</option>
+                <option value="bug">Bug Report</option>
+                <option value="feature">Feature Request</option>
+                <option value="improvement">Improvement Suggestion</option>
+                <option value="general">General Feedback</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="feedback-message">Message *</label>
+              <textarea id="feedback-message" placeholder="Tell us what you think..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit Feedback</button>
+          </form>
+        </div>
+        <div class="form-success" id="feedback-success">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin: 0 auto;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <h3>Thank You!</h3>
+          <p>Your feedback has been received. We appreciate your input!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 AeX - Smart Allergen Detection. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Supabase Configuration
+    const SUPABASE_URL = 'https://rkkzqqqfrlzxbhffrdzm.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJra3pxcXFmcmx6eGJoZmZyZHptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MzU0NDEsImV4cCI6MjA3OTMxMTQ0MX0.YWvpb4nhLswsdQjM4cG4BHESwMbwjDQj6rRgvUXH8zI';
+    
+    // Initialize Supabase client
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Local cache for products
+    let products = [];
+
+    // Page navigation
+    function showPage(page) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+      document.getElementById('page-' + page).classList.add('active');
+      document.getElementById('nav-' + page).classList.add('active');
+      
+      // Load data when visiting specific pages
+      if (page === 'database') renderProducts();
+      if (page === 'leaderboard') fetchLeaderboard();
+    }
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-question').forEach(q => {
+      q.addEventListener('click', () => {
+        q.parentElement.classList.toggle('open');
+      });
+    });
+
+    // Toggle add form
+    function toggleAddForm() {
+      const form = document.getElementById('add-form');
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Add product to Supabase
+    async function addProduct() {
+      const name = document.getElementById('input-name').value.trim();
+      const barcode = document.getElementById('input-barcode').value.trim();
+      const ingredients = document.getElementById('input-ingredients').value.trim();
+      const kcal = parseFloat(document.getElementById('input-kcal').value) || 0;
+      const protein = parseFloat(document.getElementById('input-protein').value) || 0;
+      const fat = parseFloat(document.getElementById('input-fat').value) || 0;
+      const carbs = parseFloat(document.getElementById('input-carbs').value) || 0;
+
+      if (!name || !barcode) {
+        alert('Please fill in at least the product name and barcode.');
+        return;
+      }
+
+      // Insert into Supabase
+      const { data, error } = await supabase
+        .from('food')
+        .insert([{ 
+          Name: name, 
+          photo3: barcode,  
+          AI: ingredients,  
+          kcal: kcal, 
+          protein: protein, 
+          fat: fat, 
+          carbs: carbs 
+        }])
+        .select();
+      
+      if (error) {
+        alert('Failed to add product. Please check permissions.');
+        return;
+      }
+      
+      // Clear form
+      ['input-name', 'input-barcode', 'input-ingredients', 'input-kcal', 'input-protein', 'input-fat', 'input-carbs'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      
+      toggleAddForm();
+      await fetchProducts(); // Refresh the list
+    }
+
+    // Delete product from Supabase
+    async function deleteProduct(id) {
+      if (confirm('Are you sure you want to delete this product?')) {
+        const { error } = await supabase
+          .from('food')
+          .delete()
+          .eq('id', id);
         
-        RAISE NOTICE 'Created new bucket: product-images';
-    ELSE
-        RAISE NOTICE 'Updated existing bucket to public';
-    END IF;
-END $$;
+        if (error) {
+          alert('Failed to delete product.');
+          return;
+        }
+        
+        await fetchProducts(); // Refresh the list
+      }
+    }
 
--- =====================================================
--- STEP 4: SET BUCKET FILE SIZE AND MIME TYPES
--- =====================================================
+    // Fetch products from Supabase
+    async function fetchProducts() {
+      try {
+        const { data, error } = await supabase
+          .from('food')
+          .select('*');
+        
+        if (error) {
+          updateSyncStatus('disconnected', '✗ Failed to load');
+          return;
+        }
+        
+        products = data || [];
+        renderProducts();
+      } catch (err) {
+        updateSyncStatus('disconnected', '✗ Error');
+      }
+    }
 
--- Update bucket settings
-UPDATE storage.buckets
-SET 
-    file_size_limit = 5242880,  -- 5MB limit
-    allowed_mime_types = ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-WHERE id = 'product-images';
+    // Render products
+    function renderProducts() {
+      const tbody = document.getElementById('products-tbody');
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const sort = document.getElementById('sort-select').value;
 
--- =====================================================
--- STEP 5: VERIFY POLICIES ARE ACTIVE
--- =====================================================
+      let filtered = products.filter(p => 
+        (p.Name || '').toLowerCase().includes(search) || 
+        (p.photo3 || '').includes(search) ||  
+        (p.AI || '').toLowerCase().includes(search)  
+      );
 
--- List all policies for product-images bucket
-SELECT 
-    schemaname,
-    tablename,
-    policyname,
-    permissive,
-    roles,
-    cmd,
-    qual,
-    with_check
-FROM pg_policies
-WHERE tablename = 'objects'
-  AND policyname LIKE '%Enable%'
-ORDER BY policyname;
+      filtered.sort((a, b) => {
+        if (sort === 'name') return (a.Name || '').localeCompare(b.Name || '');
+        if (sort === 'barcode') return (a.photo3 || '').localeCompare(b.photo3 || '');
+        return (b[sort] || 0) - (a[sort] || 0);
+      });
 
--- =====================================================
--- STEP 6: TEST THE PERMISSIONS
--- =====================================================
+      document.getElementById('product-count').textContent = filtered.length;
 
--- This query should return true if policies are working
-SELECT EXISTS (
-    SELECT 1
-    FROM storage.buckets
-    WHERE id = 'product-images'
-      AND public = true
-) as bucket_is_public;
+      tbody.innerHTML = filtered.map(p => `
+        <tr>
+          <td><strong>${p.Name || 'N/A'}</strong></td>
+          <td><span class="barcode">${p.photo3 || 'N/A'}</span></td>
+          <td style="max-width:200px;font-size:0.9rem;color:var(--text-light)">${(p.AI || '').substring(0, 60)}${(p.AI || '').length > 60 ? '...' : ''}</td>
+          <td>
+            <span class="nutrition-badge kcal">${p.kcal || 0} kcal</span>
+            <span class="nutrition-badge protein">${p.protein || 0}g P</span>
+            <span class="nutrition-badge fat">${p.fat || 0}g F</span>
+            <span class="nutrition-badge carbs">${p.carbs || 0}g C</span>
+          </td>
+          <td>
+            <button class="action-btn delete" onclick="deleteProduct(${p.id})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
 
--- Count active policies
-SELECT COUNT(*) as active_policies
-FROM pg_policies
-WHERE tablename = 'objects'
-  AND policyname LIKE '%Enable%';
+    // Update sync status indicator
+    function updateSyncStatus(status, message) {
+      const dot = document.getElementById('sync-status-dot');
+      const text = document.getElementById('sync-status-text');
+      
+      dot.className = 'status-dot';
+      if (status === 'connecting') {
+        dot.classList.add('connecting');
+        text.textContent = message || 'Connecting...';
+      } else if (status === 'connected') {
+        text.textContent = message || '✓ Real-time sync active';
+      } else if (status === 'disconnected') {
+        dot.classList.add('disconnected');
+        text.textContent = message || '✗ Disconnected';
+      }
+    }
 
--- =====================================================
--- TROUBLESHOOTING QUERIES
--- =====================================================
+    // Leaderboard Functions
+    let leaderboardData = [];
 
--- If still having issues, run these queries:
+    // Fetch leaderboard data
+    async function fetchLeaderboard() {
+      updateLeaderboardStatus('connecting', 'Loading leaderboard...');
+      
+      try {
+        const { data, error } = await supabase
+          .from('scans')
+          .select('id, numberofscans')
+          .order('numberofscans', { ascending: false })
+          .limit(100);
+        
+        if (error) {
+          if (error.code === 'PGRST116') {
+            updateLeaderboardStatus('disconnected', '✗ Table not found');
+            document.getElementById('leaderboard-tbody').innerHTML = `
+              <tr>
+                <td colspan="3" style="text-align: center; padding: 40px;">
+                  <p style="margin-bottom: 10px;">📊 Scans table not found</p>
+                  <p style="font-size: 0.9rem; color: var(--text-light);">Make sure the 'scans' table exists in Supabase</p>
+                </td>
+              </tr>
+            `;
+          } else {
+            updateLeaderboardStatus('disconnected', '✗ Failed to load');
+            document.getElementById('leaderboard-tbody').innerHTML = `
+              <tr>
+                <td colspan="3" style="text-align: center; padding: 40px;">
+                  <p style="margin-bottom: 10px;">❌ Error: ${error.message}</p>
+                  <p style="font-size: 0.9rem; color: var(--text-light);">Check RLS policies in Supabase</p>
+                </td>
+              </tr>
+            `;
+          }
+          return;
+        }
+        
+        leaderboardData = data || [];
+        renderLeaderboard();
+        updateLeaderboardStatus('connected', '✓ Leaderboard loaded');
+      } catch (err) {
+        updateLeaderboardStatus('disconnected', '✗ Error');
+      }
+    }
 
--- View all storage policies
--- SELECT * FROM pg_policies WHERE tablename = 'objects';
+    // Render leaderboard
+    function renderLeaderboard() {
+      const tbody = document.getElementById('leaderboard-tbody');
+      document.getElementById('leaderboard-count').textContent = leaderboardData.length;
 
--- View bucket details
--- SELECT * FROM storage.buckets WHERE id = 'product-images';
+      if (leaderboardData.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="3" style="text-align: center; padding: 40px; color: var(--text-light);">
+              No data available yet. Start scanning to appear on the leaderboard! 🚀
+            </td>
+          </tr>
+        `;
+        return;
+      }
 
--- Check RLS is enabled
--- SELECT tablename, rowsecurity FROM pg_tables WHERE tablename = 'objects';
+      tbody.innerHTML = leaderboardData.map((user, index) => {
+        const rank = index + 1;
+        let rankDisplay = rank;
+        
+        // Add medals for top 3
+        if (rank === 1) rankDisplay = '🥇';
+        else if (rank === 2) rankDisplay = '🥈';
+        else if (rank === 3) rankDisplay = '🥉';
+        
+        return `
+          <tr style="${rank <= 3 ? 'background: rgba(67,97,238,0.03);' : ''}">
+            <td style="text-align: center; font-size: 1.3rem; font-weight: 600;">${rankDisplay}</td>
+            <td><strong>User #${user.id || 'Unknown'}</strong></td>
+            <td style="text-align: center;">
+              <span class="nutrition-badge protein" style="font-size: 0.9rem; padding: 6px 12px;">
+                ${user.numberofscans || 0} scans
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
 
--- =====================================================
--- ALTERNATIVE: DISABLE RLS (NOT RECOMMENDED)
--- Only use if above doesn't work
--- =====================================================
+    // Update leaderboard status indicator
+    function updateLeaderboardStatus(status, message) {
+      const dot = document.getElementById('leaderboard-status-dot');
+      const text = document.getElementById('leaderboard-status-text');
+      
+      if (!dot || !text) return;
+      
+      dot.className = 'status-dot';
+      if (status === 'connecting') {
+        dot.classList.add('connecting');
+        text.textContent = message || 'Connecting...';
+      } else if (status === 'connected') {
+        text.textContent = message || '✓ Connected';
+      } else if (status === 'disconnected') {
+        dot.classList.add('disconnected');
+        text.textContent = message || '✗ Disconnected';
+      }
+    }
 
--- DANGER: This removes all security - only for testing!
--- ALTER TABLE storage.objects DISABLE ROW LEVEL SECURITY;
+    // Setup real-time subscriptions
+    function setupRealtimeSync() {
+      updateSyncStatus('connecting', 'Connecting to real-time sync...');
+      
+      // Subscribe to changes
+      const channel = supabase
+        .channel('food-changes')
+        .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'food' },
+          (payload) => {
+            products.push(payload.new);
+            renderProducts();
+          }
+        )
+        .on('postgres_changes',
+          { event: 'DELETE', schema: 'public', table: 'food' },
+          (payload) => {
+            products = products.filter(p => p.id !== payload.old.id);
+            renderProducts();
+          }
+        )
+        .on('postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'food' },
+          (payload) => {
+            const index = products.findIndex(p => p.id === payload.new.id);
+            if (index !== -1) {
+              products[index] = payload.new;
+              renderProducts();
+            }
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            updateSyncStatus('connected', '✓ Real-time sync active');
+          } else if (status === 'CHANNEL_ERROR') {
+            updateSyncStatus('disconnected', '✗ Sync error');
+          } else if (status === 'TIMED_OUT') {
+            updateSyncStatus('disconnected', '✗ Connection timeout');
+          }
+        });
+    }
 
--- To re-enable later:
--- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-
--- =====================================================
--- SUMMARY
--- =====================================================
-
-/*
-✅ WHAT THIS SCRIPT DOES:
-
-1. Removes old conflicting policies
-2. Creates 4 new permissive policies:
-   - Insert (upload) - allows anyone to upload
-   - Select (view) - allows anyone to view
-   - Update - allows anyone to update files
-   - Delete - allows anyone to delete files
-
-3. Ensures bucket exists and is PUBLIC
-4. Sets file size limit to 5MB
-5. Restricts to image files only (jpg, png, webp)
-
-🔒 SECURITY NOTE:
-These policies allow ANYONE (including anonymous users) to:
-- Upload images to product-images bucket
-- View any images in the bucket
-- Update/delete any images
-
-This is fine for a product contribution system but be aware
-that users can upload/delete any images, not just their own.
-
-📝 AFTER RUNNING THIS:
-1. Your app should be able to upload images
-2. No more "Permission denied" errors
-3. Images will be publicly accessible via URL
-
-🔗 IMAGE URL FORMAT:
-https://rkkzqqqfrlzxbhffrdzm.supabase.co/storage/v1/object/public/product-images/contributions/filename.jpg
-*/
+    // Initial load
+    async function init() {
+      updateSyncStatus('connecting', 'Loading...');
+      await fetchProducts();
+      setupRealtimeSync();
+    }
+    
+    // Initialize on page load
+    init();
+    
+    // Search and sort event listeners
+    document.getElementById('search-input').addEventListener('input', renderProducts);
+    document.getElementById('sort-select').addEventListener('change', renderProducts);
+    
+    // Feedback form handler
+    const feedbackForm = document.getElementById('feedback-form');
+    if (feedbackForm) {
+      feedbackForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Show success message
+        document.getElementById('feedback-form-container').classList.add('hidden');
+        document.getElementById('feedback-success').classList.add('show');
+        
+        // Reset form and hide success message after 3 seconds
+        setTimeout(() => {
+          feedbackForm.reset();
+          document.getElementById('feedback-form-container').classList.remove('hidden');
+          document.getElementById('feedback-success').classList.remove('show');
+        }, 3000);
+      });
+    }
+    
+    // Carousel functionality
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.carousel-slide');
+    const dots = document.querySelectorAll('.carousel-dot');
+    
+    function showSlide(index) {
+      if (slides.length === 0) return;
+      
+      slides.forEach(slide => slide.classList.remove('active'));
+      dots.forEach(dot => dot.classList.remove('active'));
+      
+      if (index >= slides.length) currentSlide = 0;
+      if (index < 0) currentSlide = slides.length - 1;
+      
+      slides[currentSlide].classList.add('active');
+      if (dots[currentSlide]) dots[currentSlide].classList.add('active');
+    }
+    
+    function changeSlide(direction) {
+      if (slides.length === 0) return;
+      
+      currentSlide += direction;
+      if (currentSlide >= slides.length) currentSlide = 0;
+      if (currentSlide < 0) currentSlide = slides.length - 1;
+      showSlide(currentSlide);
+    }
+    
+    function setSlide(index) {
+      if (slides.length === 0) return;
+      
+      currentSlide = index;
+      showSlide(currentSlide);
+    }
+    
+    // Auto-advance carousel every 4 seconds (only if slides exist)
+    if (slides.length > 0) {
+      setInterval(() => {
+        changeSlide(1);
+      }, 4000);
+    }
+  </script>
+</body>
+</html>
