@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AeX - Smart Allergen Detection</title>
+  <title>Allergify - Smart Allergen Detection</title>
   <link rel="icon" type="image/png" href="happy_chic_circular.png">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -31,12 +31,27 @@
     /* Navigation */
     nav { position: fixed; top: 0; left: 0; right: 0; background: rgba(232,234,237,0.95); backdrop-filter: blur(20px); z-index: 1000; border-bottom: 1px solid var(--border); }
     nav .container { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; }
-    .logo { font-size: 1.6rem; font-weight: 700; color: var(--text); }
+    .logo { font-size: 1.6rem; font-weight: 700; color: var(--text); display: flex; align-items: center; }
     .logo span { color: var(--danger); }
     .nav-links { display: flex; gap: 8px; list-style: none; }
     .nav-links a { color: var(--text-light); text-decoration: none; font-weight: 500; padding: 10px 18px; border-radius: 12px; transition: all 0.3s; }
     .nav-links a:hover { background: var(--card); color: var(--text); }
     .nav-links a.active { background: var(--card); color: var(--primary); box-shadow: var(--shadow); }
+    
+    /* Mobile Menu */
+    .menu-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
+    .menu-toggle span { display: block; width: 25px; height: 3px; background: var(--text); margin: 5px 0; transition: 0.3s; border-radius: 3px; }
+    .mobile-menu-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; }
+    .mobile-menu-overlay.active { display: block; }
+    .mobile-menu { position: fixed; top: 0; right: -100%; width: 280px; height: 100%; background: var(--card); box-shadow: -5px 0 20px rgba(0,0,0,0.1); z-index: 2001; transition: right 0.3s ease; padding: 20px; overflow-y: auto; }
+    .mobile-menu.active { right: 0; }
+    .mobile-menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid var(--border); }
+    .mobile-menu-header h3 { font-size: 1.3rem; color: var(--text); }
+    .mobile-menu-close { background: none; border: none; font-size: 2rem; color: var(--text-light); cursor: pointer; padding: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+    .mobile-menu-links { display: flex; flex-direction: column; gap: 10px; }
+    .mobile-menu-links a { color: var(--text); text-decoration: none; font-weight: 600; padding: 16px 20px; border-radius: 12px; transition: all 0.3s; font-size: 1.05rem; display: flex; align-items: center; gap: 12px; }
+    .mobile-menu-links a:hover { background: var(--bg-light); }
+    .mobile-menu-links a.active { background: var(--primary); color: white; }
     
     /* Pages */
     .page { display: none; min-height: 100vh; padding-top: 80px; }
@@ -183,10 +198,13 @@
       .stat-card { padding: 20px 15px; }
       .stat-value { font-size: 1.5rem; }
     }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .menu-toggle { display: block; }
+    }
     @media (max-width: 600px) {
-      .nav-links { gap: 4px; }
-      .nav-links a { padding: 8px 12px; font-size: 0.9rem; }
       .products-table th, .products-table td { padding: 12px 10px; font-size: 0.85rem; }
+      .logo { font-size: 1.3rem; }
     }
     
     /* Chick Mascot Styles */
@@ -211,7 +229,7 @@
   <nav>
     <div class="container">
       <div class="logo">
-        <img src="happy_chic_circular.png" alt="AeX Mascot" class="chick-logo">Ae<span>X</span>
+        <img src="happy_chic_circular.png" alt="Allergify Mascot" class="chick-logo">Allergi<span>fy</span>
       </div>
       <ul class="nav-links">
         <li><a href="#" onclick="showPage('home')" class="active" id="nav-home">Home</a></li>
@@ -220,13 +238,34 @@
         <li><a href="#" onclick="showPage('leaderboard')" id="nav-leaderboard">Leaderboard</a></li>
         <li><a href="#" onclick="showPage('feedback')" id="nav-feedback">Feedback</a></li>
       </ul>
+      <button class="menu-toggle" onclick="toggleMobileMenu()" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
     </div>
   </nav>
 
+  <!-- Mobile Menu -->
+  <div class="mobile-menu-overlay" id="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-header">
+      <h3>Menu</h3>
+      <button class="mobile-menu-close" onclick="toggleMobileMenu()" aria-label="Close">&times;</button>
+    </div>
+    <div class="mobile-menu-links">
+      <a href="#" onclick="showPage('home'); toggleMobileMenu();" id="mobile-nav-home" class="active">🏠 Home</a>
+      <a href="#" onclick="showPage('faq'); toggleMobileMenu();" id="mobile-nav-faq">❓ FAQ</a>
+      <a href="#" onclick="showPage('database'); toggleMobileMenu();" id="mobile-nav-database">📊 Database</a>
+      <a href="#" onclick="showPage('leaderboard'); toggleMobileMenu();" id="mobile-nav-leaderboard">🏆 Leaderboard</a>
+      <a href="#" onclick="showPage('feedback'); toggleMobileMenu();" id="mobile-nav-feedback">💬 Feedback</a>
+    </div>
+  </div>
+
   <!-- Floating Chicks -->
-  <img src="happy_chic_circular_yellow.png" alt="AeX Helper" class="floating-chick floating-chick-1" title="Click me!">
-  <img src="sad_chick.png" alt="AeX Helper" class="floating-chick floating-chick-2" title="Hello!">
-  <img src="annoyed_chick.png" alt="AeX Helper" class="floating-chick floating-chick-3" title="Hey!">
+  <img src="happy_chic_circular_yellow.png" alt="Allergify Helper" class="floating-chick floating-chick-1" title="Click me!">
+  <img src="sad_chick.png" alt="Allergify Helper" class="floating-chick floating-chick-2" title="Hello!">
+  <img src="annoyed_chick.png" alt="Allergify Helper" class="floating-chick floating-chick-3" title="Hey!">
 
   <!-- Home Page -->
   <div class="page active" id="page-home">
@@ -237,7 +276,7 @@
           <img src="angry_chick.png" alt="Chick" class="hero-chick right">
           <div class="hero-text">
             <h1>Instantly scan foods for <span>hidden allergens</span></h1>
-            <p>AeX uses AI-powered barcode scanning to identify over 100 allergens in seconds. Make informed, safer food choices with confidence.</p>
+            <p>Allergify uses AI-powered barcode scanning to identify over 100 allergens in seconds. Make informed, safer food choices with confidence.</p>
             <div class="hero-buttons">
               <a href="#" class="btn btn-primary">
                 <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
@@ -344,18 +383,18 @@
     <div class="faq-hero">
       <img src="crashout_chick.png" alt="FAQ" class="section-chick" style="margin: 0 auto 20px;">
       <h1>Frequently Asked Questions</h1>
-      <p>Find answers to common questions about AeX</p>
+      <p>Find answers to common questions about Allergify</p>
     </div>
     <div class="faq-container">
       <div class="faq-category">
         <h3>📱 General</h3>
         <div class="faq-item">
           <div class="faq-question">What does this app do?</div>
-          <div class="faq-answer"><p>AeX scans food products by barcode and uses AI to identify over 100 allergens in ingredient lists, helping you make safer food choices.</p></div>
+          <div class="faq-answer"><p>Allergify scans food products by barcode and uses AI to identify over 100 allergens in ingredient lists, helping you make safer food choices.</p></div>
         </div>
         <div class="faq-item">
           <div class="faq-question">Which devices are supported?</div>
-          <div class="faq-answer"><p>AeX works on iPhone and iPad (iOS 16+). Android support is coming soon.</p></div>
+          <div class="faq-answer"><p>Allergify works on iPhone and iPad (iOS 16+). Android support is coming soon.</p></div>
         </div>
         <div class="faq-item">
           <div class="faq-question">Is an account required?</div>
@@ -371,7 +410,7 @@
         </div>
         <div class="faq-item">
           <div class="faq-question">What allergens can the app detect?</div>
-          <div class="faq-answer"><p>AeX identifies over 100 common allergens including peanuts, tree nuts, dairy, gluten, soy, and many more. You can customize your profile in Settings.</p></div>
+          <div class="faq-answer"><p>Allergify identifies over 100 common allergens including peanuts, tree nuts, dairy, gluten, soy, and many more. You can customize your profile in Settings.</p></div>
         </div>
         <div class="faq-item">
           <div class="faq-question">Can I add custom allergens?</div>
@@ -391,7 +430,7 @@
         </div>
         <div class="faq-item">
           <div class="faq-question">How accurate are allergen warnings?</div>
-          <div class="faq-answer"><p>AeX aims for high accuracy, but results depend on product label quality and database completeness. Always double-check real packaging and consult your allergist for safety.</p></div>
+          <div class="faq-answer"><p>Allergify aims for high accuracy, but results depend on product label quality and database completeness. Always double-check real packaging and consult your allergist for safety.</p></div>
         </div>
         <div class="faq-item">
           <div class="faq-question">Does the app work with international products?</div>
@@ -419,7 +458,7 @@
         <h3>💎 Account & Premium Features</h3>
         <div class="faq-item">
           <div class="faq-question">Is the app free?</div>
-          <div class="faq-answer"><p>Basic scanning is free. AeX offers a premium subscription for advanced features like detailed nutritional analysis, personalized allergen profiles, and offline mode.</p></div>
+          <div class="faq-answer"><p>Basic scanning is free. Allergify offers a premium subscription for advanced features like detailed nutritional analysis, personalized allergen profiles, and offline mode.</p></div>
         </div>
       </div>
     </div>
@@ -544,7 +583,7 @@
         <div class="feedback-form-container" id="feedback-form-container">
           <img src="dissapoionted_chick_blue.png" alt="Feedback" class="section-chick" style="margin: 0 auto 20px; display: block;">
           <h2>Share Your Feedback</h2>
-          <p>Help us improve AeX! Your input matters.</p>
+          <p>Help us improve Allergify! Your input matters.</p>
           <form class="feedback-form" id="feedback-form">
             <div class="form-group">
               <label for="feedback-name">Name (Optional)</label>
@@ -584,7 +623,7 @@
 
   <footer>
     <div class="container">
-      <p>&copy; 2025 AeX - Smart Allergen Detection. All rights reserved.</p>
+      <p>&copy; 2025 Allergify - Smart Allergen Detection. All rights reserved.</p>
     </div>
   </footer>
 
@@ -599,12 +638,24 @@
     // Local cache for products
     let products = [];
 
+    // Mobile menu toggle
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      const overlay = document.getElementById('mobile-menu-overlay');
+      menu.classList.toggle('active');
+      overlay.classList.toggle('active');
+    }
+
     // Page navigation
     function showPage(page) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+      document.querySelectorAll('.mobile-menu-links a').forEach(a => a.classList.remove('active'));
       document.getElementById('page-' + page).classList.add('active');
-      document.getElementById('nav-' + page).classList.add('active');
+      const navLink = document.getElementById('nav-' + page);
+      const mobileNavLink = document.getElementById('mobile-nav-' + page);
+      if (navLink) navLink.classList.add('active');
+      if (mobileNavLink) mobileNavLink.classList.add('active');
       
       // Load data when visiting specific pages
       if (page === 'database') renderProducts();
