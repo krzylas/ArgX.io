@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaderboard - Allergify</title>
+  <link rel="icon" type="image/png" href="happy_chic_circular.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #4361EE;
+      --primary-light: #6B7FFF;
+      --primary-dark: #3451DE;
+      --success: #22C55E;
+      --warning: #F59E0B;
+      --danger: #7cfc28;
+      --bg: #E8EAED;
+      --bg-light: #F5F6F8;
+      --card: #FFFFFF;
+      --text: #1F2937;
+      --text-light: #6B7280;
+      --text-muted: #9CA3AF;
+      --border: #E5E7EB;
+      --shadow: 0 4px 20px rgba(0,0,0,0.08);
+      --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    
+    /* Navigation */
+    nav { position: fixed; top: 0; left: 0; right: 0; background: rgba(232,234,237,0.95); backdrop-filter: blur(20px); z-index: 1000; border-bottom: 1px solid var(--border); }
+    nav .container { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; }
+    .logo { font-size: 1.6rem; font-weight: 700; color: var(--text); display: flex; align-items: center; }
+    .logo span { color: var(--danger); }
+    .nav-links { display: flex; gap: 8px; list-style: none; }
+    .nav-links a { color: var(--text-light); text-decoration: none; font-weight: 500; padding: 10px 18px; border-radius: 12px; transition: all 0.3s; }
+    .nav-links a:hover { background: var(--card); color: var(--text); }
+    .nav-links a.active { background: var(--card); color: var(--primary); box-shadow: var(--shadow); }
+    
+    /* Mobile Menu */
+    .menu-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
+    .menu-toggle span { display: block; width: 25px; height: 3px; background: var(--text); margin: 5px 0; transition: 0.3s; border-radius: 3px; }
+    .mobile-menu-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; }
+    .mobile-menu-overlay.active { display: block; }
+    .mobile-menu { position: fixed; top: 0; right: -100%; width: 280px; height: 100%; background: var(--card); box-shadow: -5px 0 20px rgba(0,0,0,0.1); z-index: 2001; transition: right 0.3s ease; padding: 20px; overflow-y: auto; }
+    .mobile-menu.active { right: 0; }
+    .mobile-menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid var(--border); }
+    .mobile-menu-header h3 { font-size: 1.3rem; color: var(--text); }
+    .mobile-menu-close { background: none; border: none; font-size: 2rem; color: var(--text-light); cursor: pointer; padding: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+    .mobile-menu-links { display: flex; flex-direction: column; gap: 10px; }
+    .mobile-menu-links a { color: var(--text); text-decoration: none; font-weight: 600; padding: 16px 20px; border-radius: 12px; transition: all 0.3s; font-size: 1.05rem; display: flex; align-items: center; gap: 12px; }
+    .mobile-menu-links a:hover { background: var(--bg-light); }
+    .mobile-menu-links a.active { background: var(--primary); color: white; }
+    
+    /* Leaderboard Page */
+    .database-hero { padding: 30px 0; text-align: center; padding-top: 110px; }
+    .database-hero h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+    
+    /* Products Table */
+    .products-container { background: var(--card); border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); }
+    .products-table { width: 100%; border-collapse: collapse; }
+    .products-table th, .products-table td { padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--border); }
+    .products-table th { background: var(--bg-light); font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .products-table tr:hover { background: var(--bg-light); }
+    .products-table tr:last-child td { border-bottom: none; }
+    .nutrition-badge { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 500; margin: 2px; }
+    .nutrition-badge.protein { background: rgba(67,97,238,0.1); color: var(--primary); }
+    
+    .realtime-status { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-light); margin-bottom: 20px; justify-content: center; }
+    .status-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; animation: pulse 2s infinite; }
+    .status-dot.connecting { background: var(--warning); }
+    .status-dot.disconnected { background: var(--danger); animation: none; }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.9); } }
+    
+    .chick-logo { width: 40px; height: 40px; border-radius: 50%; margin-right: 8px; vertical-align: middle; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    
+    /* Footer */
+    footer { background: var(--card); padding: 30px 0; text-align: center; border-top: 1px solid var(--border); margin-top: 40px; }
+    footer p { color: var(--text-muted); font-size: 0.9rem; }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .menu-toggle { display: block; }
+      .logo { font-size: 1.3rem; }
+      .products-table th, .products-table td { padding: 12px 10px; font-size: 0.85rem; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <div class="logo">
+        <img src="happy_chic_circular.png" alt="Allergify Mascot" class="chick-logo">Allergi<span>fy</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="aex.html" id="nav-home">Home</a></li>
+        <li><a href="faq.html" id="nav-faq">FAQ</a></li>
+        <li><a href="database.html" id="nav-database">Database</a></li>
+        <li><a href="leaderboard.html" class="active" id="nav-leaderboard">Leaderboard</a></li>
+        <li><a href="feedback.html" id="nav-feedback">Feedback</a></li>
+        <li><a href="contact.html" id="nav-contact">Contact</a></li>
+      </ul>
+      <button class="menu-toggle" onclick="toggleMobileMenu()" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu-overlay" id="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-header">
+      <h3>Menu</h3>
+      <button class="mobile-menu-close" onclick="toggleMobileMenu()" aria-label="Close">&times;</button>
+    </div>
+    <div class="mobile-menu-links">
+      <a href="aex.html" id="mobile-nav-home">🏠 Home</a>
+      <a href="faq.html" id="mobile-nav-faq">❓ FAQ</a>
+      <a href="database.html" id="mobile-nav-database">📊 Database</a>
+      <a href="leaderboard.html" class="active" id="mobile-nav-leaderboard">🏆 Leaderboard</a>
+      <a href="feedback.html" id="mobile-nav-feedback">💬 Feedback</a>
+      <a href="contact.html" id="mobile-nav-contact">📧 Contact</a>
+    </div>
+  </div>
+
+  <div class="container" style="padding-top: 30px; padding-bottom: 80px;">
+    <div class="database-hero">
+      <h1>🏆 Leaderboard</h1>
+      <p style="color: var(--text-light); margin-bottom: 20px;">Top scanners in our community</p>
+      <div class="realtime-status">
+        <span class="status-dot" id="leaderboard-status-dot"></span>
+        <span id="leaderboard-status-text">Loading leaderboard...</span> • <span id="leaderboard-count">0</span> users
+      </div>
+    </div>
+
+    <div class="products-container" style="max-width: 800px; margin: 0 auto;">
+      <table class="products-table">
+        <thead>
+          <tr>
+            <th style="width: 80px; text-align: center;">Rank</th>
+            <th>User ID</th>
+            <th style="text-align: center;">Number of Scans</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-tbody">
+          <tr>
+            <td colspan="3" style="text-align: center; padding: 40px; color: var(--text-light);">
+              Loading leaderboard data...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 Allergify - Smart Allergen Detection. All rights reserved.</p>
+      <p style="margin-top: 10px;">
+        <a href="terms-of-service.html" style="color: var(--primary); text-decoration: none; margin: 0 10px;">Terms of Service</a> | 
+        <a href="privacy-policy.html" style="color: var(--primary); text-decoration: none; margin: 0 10px;">Privacy Policy</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // Supabase Configuration
+    const SUPABASE_URL = 'https://rkkzqqqfrlzxbhffrdzm.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJra3pxcXFmcmx6eGJoZmZyZHptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3MzU0NDEsImV4cCI6MjA3OTMxMTQ0MX0.YWvpb4nhLswsdQjM4cG4BHESwMbwjDQj6rRgvUXH8zI';
+    
+    // Initialize Supabase client
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let leaderboardData = [];
+
+    // Mobile menu toggle
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      const overlay = document.getElementById('mobile-menu-overlay');
+      menu.classList.toggle('active');
+      overlay.classList.toggle('active');
+    }
+
+    // Fetch leaderboard data
+    async function fetchLeaderboard() {
+      updateLeaderboardStatus('connecting', 'Loading leaderboard...');
+      
+      try {
+        const { data, error } = await supabase
+          .from('scans')
+          .select('id, numberofscans')
+          .order('numberofscans', { ascending: false })
+          .limit(100);
+        
+        if (error) {
+          if (error.code === 'PGRST116') {
+            updateLeaderboardStatus('disconnected', '✗ Table not found');
+            document.getElementById('leaderboard-tbody').innerHTML = `
+              <tr>
+                <td colspan="3" style="text-align: center; padding: 40px;">
+                  <p style="margin-bottom: 10px;">📊 Scans table not found</p>
+                  <p style="font-size: 0.9rem; color: var(--text-light);">Make sure the 'scans' table exists in Supabase</p>
+                </td>
+              </tr>
+            `;
+          } else {
+            updateLeaderboardStatus('disconnected', '✗ Failed to load');
+            document.getElementById('leaderboard-tbody').innerHTML = `
+              <tr>
+                <td colspan="3" style="text-align: center; padding: 40px;">
+                  <p style="margin-bottom: 10px;">❌ Error: ${error.message}</p>
+                  <p style="font-size: 0.9rem; color: var(--text-light);">Check RLS policies in Supabase</p>
+                </td>
+              </tr>
+            `;
+          }
+          return;
+        }
+        
+        leaderboardData = data || [];
+        renderLeaderboard();
+        updateLeaderboardStatus('connected', '✓ Leaderboard loaded');
+      } catch (err) {
+        updateLeaderboardStatus('disconnected', '✗ Error');
+      }
+    }
+
+    // Render leaderboard
+    function renderLeaderboard() {
+      const tbody = document.getElementById('leaderboard-tbody');
+      document.getElementById('leaderboard-count').textContent = leaderboardData.length;
+
+      if (leaderboardData.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="3" style="text-align: center; padding: 40px; color: var(--text-light);">
+              No data available yet. Start scanning to appear on the leaderboard! 🚀
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = leaderboardData.map((user, index) => {
+        const rank = index + 1;
+        let rankDisplay = rank;
+        
+        // Add medals for top 3
+        if (rank === 1) rankDisplay = '🥇';
+        else if (rank === 2) rankDisplay = '🥈';
+        else if (rank === 3) rankDisplay = '🥉';
+        
+        return `
+          <tr style="${rank <= 3 ? 'background: rgba(67,97,238,0.03);' : ''}">
+            <td style="text-align: center; font-size: 1.3rem; font-weight: 600;">${rankDisplay}</td>
+            <td><strong>User #${user.id || 'Unknown'}</strong></td>
+            <td style="text-align: center;">
+              <span class="nutrition-badge protein" style="font-size: 0.9rem; padding: 6px 12px;">
+                ${user.numberofscans || 0} scans
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Update leaderboard status indicator
+    function updateLeaderboardStatus(status, message) {
+      const dot = document.getElementById('leaderboard-status-dot');
+      const text = document.getElementById('leaderboard-status-text');
+      
+      if (!dot || !text) return;
+      
+      dot.className = 'status-dot';
+      if (status === 'connecting') {
+        dot.classList.add('connecting');
+        text.textContent = message || 'Connecting...';
+      } else if (status === 'connected') {
+        text.textContent = message || '✓ Connected';
+      } else if (status === 'disconnected') {
+        dot.classList.add('disconnected');
+        text.textContent = message || '✗ Disconnected';
+      }
+    }
+
+    // Initialize on page load
+    fetchLeaderboard();
+  </script>
+</body>
+</html>

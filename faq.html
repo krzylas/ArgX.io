@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ - Allergify</title>
+  <link rel="icon" type="image/png" href="happy_chic_circular.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #4361EE;
+      --primary-light: #6B7FFF;
+      --primary-dark: #3451DE;
+      --success: #22C55E;
+      --warning: #F59E0B;
+      --danger: #7cfc28;
+      --bg: #E8EAED;
+      --bg-light: #F5F6F8;
+      --card: #FFFFFF;
+      --text: #1F2937;
+      --text-light: #6B7280;
+      --text-muted: #9CA3AF;
+      --border: #E5E7EB;
+      --shadow: 0 4px 20px rgba(0,0,0,0.08);
+      --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    
+    /* Navigation */
+    nav { position: fixed; top: 0; left: 0; right: 0; background: rgba(232,234,237,0.95); backdrop-filter: blur(20px); z-index: 1000; border-bottom: 1px solid var(--border); }
+    nav .container { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; }
+    .logo { font-size: 1.6rem; font-weight: 700; color: var(--text); display: flex; align-items: center; }
+    .logo span { color: var(--danger); }
+    .nav-links { display: flex; gap: 8px; list-style: none; }
+    .nav-links a { color: var(--text-light); text-decoration: none; font-weight: 500; padding: 10px 18px; border-radius: 12px; transition: all 0.3s; }
+    .nav-links a:hover { background: var(--card); color: var(--text); }
+    .nav-links a.active { background: var(--card); color: var(--primary); box-shadow: var(--shadow); }
+    
+    /* Mobile Menu */
+    .menu-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
+    .menu-toggle span { display: block; width: 25px; height: 3px; background: var(--text); margin: 5px 0; transition: 0.3s; border-radius: 3px; }
+    .mobile-menu-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; }
+    .mobile-menu-overlay.active { display: block; }
+    .mobile-menu { position: fixed; top: 0; right: -100%; width: 280px; height: 100%; background: var(--card); box-shadow: -5px 0 20px rgba(0,0,0,0.1); z-index: 2001; transition: right 0.3s ease; padding: 20px; overflow-y: auto; }
+    .mobile-menu.active { right: 0; }
+    .mobile-menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid var(--border); }
+    .mobile-menu-header h3 { font-size: 1.3rem; color: var(--text); }
+    .mobile-menu-close { background: none; border: none; font-size: 2rem; color: var(--text-light); cursor: pointer; padding: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+    .mobile-menu-links { display: flex; flex-direction: column; gap: 10px; }
+    .mobile-menu-links a { color: var(--text); text-decoration: none; font-weight: 600; padding: 16px 20px; border-radius: 12px; transition: all 0.3s; font-size: 1.05rem; display: flex; align-items: center; gap: 12px; }
+    .mobile-menu-links a:hover { background: var(--bg-light); }
+    .mobile-menu-links a.active { background: var(--primary); color: white; }
+    
+    /* FAQ Page */
+    .faq-hero { padding: 50px 0; text-align: center; padding-top: 130px; }
+    .faq-hero h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 10px; }
+    .faq-hero p { color: var(--text-light); }
+    .faq-container { max-width: 800px; margin: 0 auto; padding: 20px 20px 80px; }
+    .faq-category { margin-bottom: 35px; }
+    .faq-category h3 { color: var(--primary); font-size: 1rem; font-weight: 600; margin-bottom: 15px; padding-left: 5px; }
+    .faq-item { background: var(--card); border-radius: 16px; margin-bottom: 10px; box-shadow: var(--shadow); overflow: hidden; }
+    .faq-question { padding: 20px 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; transition: background 0.3s; color: var(--text); }
+    .faq-question:hover { background: var(--bg-light); }
+    .faq-question::after { content: '+'; font-size: 1.4rem; color: var(--primary); transition: transform 0.3s; font-weight: 400; }
+    .faq-item.open .faq-question::after { transform: rotate(45deg); }
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s, padding 0.3s; }
+    .faq-item.open .faq-answer { max-height: 500px; padding: 0 24px 20px; }
+    .faq-answer p { color: var(--text-light); line-height: 1.7; }
+    
+    /* Section Chick */
+    .section-chick { width: 80px; height: 80px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .chick-logo { width: 40px; height: 40px; border-radius: 50%; margin-right: 8px; vertical-align: middle; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    
+    /* Footer */
+    footer { background: var(--card); padding: 30px 0; text-align: center; border-top: 1px solid var(--border); margin-top: 40px; }
+    footer p { color: var(--text-muted); font-size: 0.9rem; }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .menu-toggle { display: block; }
+      .logo { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <div class="logo">
+        <img src="happy_chic_circular.png" alt="Allergify Mascot" class="chick-logo">Allergi<span>fy</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="aex.html" id="nav-home">Home</a></li>
+        <li><a href="faq.html" class="active" id="nav-faq">FAQ</a></li>
+        <li><a href="database.html" id="nav-database">Database</a></li>
+        <li><a href="leaderboard.html" id="nav-leaderboard">Leaderboard</a></li>
+        <li><a href="feedback.html" id="nav-feedback">Feedback</a></li>
+        <li><a href="contact.html" id="nav-contact">Contact</a></li>
+      </ul>
+      <button class="menu-toggle" onclick="toggleMobileMenu()" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu-overlay" id="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-header">
+      <h3>Menu</h3>
+      <button class="mobile-menu-close" onclick="toggleMobileMenu()" aria-label="Close">&times;</button>
+    </div>
+    <div class="mobile-menu-links">
+      <a href="aex.html" id="mobile-nav-home">🏠 Home</a>
+      <a href="faq.html" class="active" id="mobile-nav-faq">❓ FAQ</a>
+      <a href="database.html" id="mobile-nav-database">📊 Database</a>
+      <a href="leaderboard.html" id="mobile-nav-leaderboard">🏆 Leaderboard</a>
+      <a href="feedback.html" id="mobile-nav-feedback">💬 Feedback</a>
+      <a href="contact.html" id="mobile-nav-contact">📧 Contact</a>
+    </div>
+  </div>
+
+  <div class="faq-hero">
+    <img src="crashout_chick.png" alt="FAQ" class="section-chick" style="margin: 0 auto 20px;">
+    <h1>Frequently Asked Questions</h1>
+    <p>Find answers to common questions about Allergify</p>
+  </div>
+  <div class="faq-container">
+    <div class="faq-category">
+      <h3>📱 General</h3>
+      <div class="faq-item">
+        <div class="faq-question">What does this app do?</div>
+        <div class="faq-answer"><p>Allergify scans food products by barcode and uses AI to identify over 100 allergens in ingredient lists, helping you make safer food choices.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">Which devices are supported?</div>
+        <div class="faq-answer"><p>Allergify works on iPhone and iPad (iOS 16+). Android support is coming soon.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">Is an account required?</div>
+        <div class="faq-answer"><p>No account is required to use basic scanning features.</p></div>
+      </div>
+    </div>
+
+    <div class="faq-category">
+      <h3>🔍 Scanning & Allergens</h3>
+      <div class="faq-item">
+        <div class="faq-question">How do I scan a product?</div>
+        <div class="faq-answer"><p>Tap the scan button on the home screen and point your camera at the product barcode.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">What allergens can the app detect?</div>
+        <div class="faq-answer"><p>Allergify identifies over 100 common allergens including peanuts, tree nuts, dairy, gluten, soy, and many more. You can customize your profile in Settings.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">Can I add custom allergens?</div>
+        <div class="faq-answer"><p>Currently, you can select from our in-app list. Custom allergen entries are planned for future updates.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">What if a barcode isn't found?</div>
+        <div class="faq-answer"><p>If a product isn't in our database, you'll see an option to submit details and help improve our data.</p></div>
+      </div>
+    </div>
+
+    <div class="faq-category">
+      <h3>📊 Ingredient & Data Accuracy</h3>
+      <div class="faq-item">
+        <div class="faq-question">Where does product information come from?</div>
+        <div class="faq-answer"><p>We primarily use Open Food Facts, an open, community-driven database. AI is used to interpret and cross-check ingredient lists for the most reliable results.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">How accurate are allergen warnings?</div>
+        <div class="faq-answer"><p>Allergify aims for high accuracy, but results depend on product label quality and database completeness. Always double-check real packaging and consult your allergist for safety.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">Does the app work with international products?</div>
+        <div class="faq-answer"><p>Yes—ingredients in many languages are supported. If you encounter an unsupported product, you can submit it for review.</p></div>
+      </div>
+    </div>
+
+    <div class="faq-category">
+      <h3>🔐 Privacy & Data</h3>
+      <div class="faq-item">
+        <div class="faq-question">What data does the app store?</div>
+        <div class="faq-answer"><p>Only anonymous scan data (barcode and ingredient information) is saved to improve the database. No personal information is collected.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">Is my data shared?</div>
+        <div class="faq-answer"><p>No personal data is ever shared. Contributed product info may be sent to Open Food Facts to help the broader community.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">Where can I read your privacy policy?</div>
+        <div class="faq-answer"><p>See our Privacy Policy in the app menu or on our website.</p></div>
+      </div>
+    </div>
+
+    <div class="faq-category">
+      <h3>💎 Account & Premium Features</h3>
+      <div class="faq-item">
+        <div class="faq-question">Is the app free?</div>
+        <div class="faq-answer"><p>Basic scanning is free. Allergify offers a premium subscription for advanced features like detailed nutritional analysis, personalized allergen profiles, and offline mode.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 Allergify - Smart Allergen Detection. All rights reserved.</p>
+      <p style="margin-top: 10px;">
+        <a href="terms-of-service.html" style="color: var(--primary); text-decoration: none; margin: 0 10px;">Terms of Service</a> | 
+        <a href="privacy-policy.html" style="color: var(--primary); text-decoration: none; margin: 0 10px;">Privacy Policy</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // Mobile menu toggle
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      const overlay = document.getElementById('mobile-menu-overlay');
+      menu.classList.toggle('active');
+      overlay.classList.toggle('active');
+    }
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-question').forEach(q => {
+      q.addEventListener('click', () => {
+        q.parentElement.classList.toggle('open');
+      });
+    });
+  </script>
+</body>
+</html>
